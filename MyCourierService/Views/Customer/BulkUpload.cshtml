@@ -1,0 +1,270 @@
+﻿@model MyCourierSA.Models.BulkUploadViewModel
+@{
+    Layout = null;
+    ViewBag.Title = "Bulk Shipment Upload";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewBag.Title - MyCourier</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+
+    <style>
+        /* Premium Background */
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, rgba(15, 30, 50, 0.85) 0%, rgba(10, 15, 25, 0.95) 100%), url('/Content/Images/bulk-upload-bg.jpg');
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding-bottom: 3rem;
+            padding-top: 2rem;
+        }
+
+        /* Glassmorphism Upload Card */
+        .upload-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            color: #333;
+            border-radius: 1.25rem;
+            padding: 2.5rem;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Interactive Drop Zone */
+        .drop-zone {
+            cursor: pointer;
+            border: 2px dashed #0d6efd;
+            background-color: #f8f9fa;
+            padding: 3rem 2rem;
+            text-align: center;
+            border-radius: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+            .drop-zone:hover {
+                background-color: #e7f1ff;
+                border-color: #0a58ca;
+            }
+
+            /* Active class when dragging file over */
+            .drop-zone.dragover {
+                background-color: #cfe2ff;
+                border-color: #084298;
+                transform: scale(1.02);
+                box-shadow: 0 5px 15px rgba(13, 110, 253, 0.2);
+            }
+
+        .drop-icon {
+            font-size: 3.5rem;
+            color: #0d6efd;
+            margin-bottom: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .drop-zone:hover .drop-icon {
+            transform: translateY(-5px);
+        }
+
+        /* Table custom styling for preview */
+        .preview-table th {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background-color: #f1f3f5;
+        }
+
+        .preview-table td {
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="max-width: 900px;">
+
+        <!-- Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+            <h2 class="mb-0 fw-bold text-white"><i class="bi bi-cloud-arrow-up-fill text-info me-2"></i> Bulk Upload</h2>
+            <a href="@Url.Action("Index", "Customer")" class="btn btn-outline-light shadow-sm mt-3 mt-sm-0">
+                <i class="bi bi-arrow-left"></i> Dashboard
+            </a>
+        </div>
+
+        <!-- System Alerts -->
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 rounded-3 mb-4" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0 rounded-3 mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <!-- Info Alert -->
+        <div class="alert alert-info border-0 shadow-sm d-flex align-items-center rounded-3 mb-4">
+            <i class="bi bi-info-circle-fill fs-4 me-3 text-info"></i>
+            <div>
+                <strong>Note:</strong> Uploaded files must match the required format to process correctly.
+                <a href="/Content/Templates/ShipmentTemplate.csv" class="alert-link ms-1 text-decoration-underline">Download CSV Template</a>
+            </div>
+        </div>
+
+        <!-- Upload Card -->
+        <div class="upload-card mb-4">
+            @using (Html.BeginForm("BulkUpload", "Customer", FormMethod.Post, new { enctype = "multipart/form-data", id = "uploadForm" }))
+            {
+                @Html.AntiForgeryToken()
+
+                <div id="fileDrop" class="drop-zone mb-4">
+                    <i class="bi bi-file-earmark-spreadsheet drop-icon d-block"></i>
+                    <h5 class="fw-bold text-dark">Drag & drop your CSV file here</h5>
+                    <p class="text-muted mb-0">or <span class="text-primary fw-bold text-decoration-underline">click to browse</span> your computer</p>
+
+                    <!-- Hidden File Input -->
+                    @Html.TextBoxFor(m => m.BulkFiles, new { type = "file", id = "BulkFiles", accept = ".csv", @class = "d-none" })
+                </div>
+
+                <button type="submit" id="submitBtn" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm" disabled>
+                    <i class="bi bi-gear-fill me-2"></i> Process Bulk Import
+                </button>
+            }
+        </div>
+
+        <!-- Feature: Dynamic File Preview Container -->
+        <div id="filePreviewContainer"></div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Feature: Drag & Drop + CSV Preview Logic -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const dropZone = document.getElementById("fileDrop");
+            const fileInput = document.getElementById("BulkFiles");
+            const submitBtn = document.getElementById("submitBtn");
+            const previewContainer = document.getElementById("filePreviewContainer");
+
+            // 1. Click to browse
+            dropZone.addEventListener("click", () => fileInput.click());
+
+            // 2. Drag and Drop events
+            dropZone.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                dropZone.classList.add("dragover");
+            });
+
+            dropZone.addEventListener("dragleave", () => {
+                dropZone.classList.remove("dragover");
+            });
+
+            dropZone.addEventListener("drop", (e) => {
+                e.preventDefault();
+                dropZone.classList.remove("dragover");
+
+                if (e.dataTransfer.files.length > 0) {
+                    fileInput.files = e.dataTransfer.files;
+                    handleFileSelection(fileInput.files[0]);
+                }
+            });
+
+            // 3. Browse file change event
+            fileInput.addEventListener("change", function () {
+                if (this.files.length > 0) {
+                    handleFileSelection(this.files[0]);
+                }
+            });
+
+            // Handle the selected file
+            function handleFileSelection(file) {
+                // Validate file type
+                if (!file.name.toLowerCase().endsWith('.csv')) {
+                    alert("Invalid file type. Please upload a .csv file.");
+                    fileInput.value = ""; // Reset
+                    submitBtn.disabled = true;
+                    return;
+                }
+
+                // Update Drop Zone UI
+                const fileSize = (file.size / 1024).toFixed(2) + " KB";
+                dropZone.innerHTML = `
+                        <i class="bi bi-file-earmark-check-fill drop-icon text-success d-block"></i>
+                        <h5 class="fw-bold text-success mb-1">${file.name}</h5>
+                        <p class="text-muted small mb-2">Size: ${fileSize}</p>
+                        <p class="text-primary small mb-0"><i class="bi bi-arrow-repeat"></i> Click or drag to change file</p>
+                    `;
+
+                // Enable Submit Button
+                submitBtn.disabled = false;
+
+                // Generate CSV Preview
+                generateCsvPreview(file);
+            }
+
+            // Read the CSV and generate an HTML table preview
+            function generateCsvPreview(file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const text = e.target.result;
+                    // Split by new line, remove empty lines
+                    const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
+
+                    if (lines.length === 0) return;
+
+                    let html = `
+                            <div class="bg-white rounded-3 shadow-sm border p-4 mb-4">
+                                <h6 class="fw-bold text-dark mb-3"><i class="bi bi-table text-primary me-2"></i> Data Preview (First 3 Rows)</h6>
+                                <div class="table-responsive rounded border">
+                                    <table class="table table-hover preview-table table-bordered mb-0">
+                        `;
+
+                    // Generate Headers
+                    const headers = lines[0].split(",");
+                    html += `<thead class="table-light"><tr>`;
+                    headers.forEach(h => html += `<th>${h.trim()}</th>`);
+                    html += `</tr></thead><tbody>`;
+
+                    // Generate Rows (Up to 3 data rows)
+                    const rowLimit = Math.min(lines.length, 4);
+                    for (let i = 1; i < rowLimit; i++) {
+                        const cols = lines[i].split(",");
+                        html += `<tr>`;
+                        cols.forEach(c => html += `<td>${c.trim()}</td>`);
+                        html += `</tr>`;
+                    }
+
+                    html += `</tbody></table></div>`;
+
+                    // Note if there's more data
+                    if (lines.length > 4) {
+                        html += `<div class="text-muted small mt-2"><i class="bi bi-info-circle"></i> Showing 3 of ${lines.length - 1} records.</div>`;
+                    }
+
+                    html += `</div>`;
+                    previewContainer.innerHTML = html;
+                };
+
+                reader.readAsText(file);
+            }
+        });
+    </script>
+</body>
+</html>

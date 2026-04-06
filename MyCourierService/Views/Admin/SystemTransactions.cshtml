@@ -1,0 +1,283 @@
+﻿@model IEnumerable<MyCourierSA.Models.TransactionViewModel>
+@{
+    Layout = null; // Standalone Premium View
+    ViewBag.Title = "Global Financial Ledger";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewBag.Title - MyCourier HQ</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #4361ee;
+            --success: #06d6a0;
+            --warning: #ffd166;
+            --danger: #ef476f;
+            --dark: #0f172a;
+        }
+
+        body {
+            background: #f8fafc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .main-overlay {
+            background: linear-gradient(135deg, rgba(245, 247, 250, 0.98) 0%, rgba(230, 235, 245, 0.98) 100%);
+            min-height: 100vh;
+            backdrop-filter: blur(10px);
+            padding-bottom: 5rem;
+        }
+
+        .glass-card {
+            background: white;
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+            margin-bottom: 1.5rem;
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 0;
+        }
+
+        .btn-premium {
+            border-radius: 50rem;
+            padding: 0.6rem 1.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        .time-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: #64748b;
+            background: #f1f5f9;
+            padding: 0.3rem 0.7rem;
+            border-radius: 8px;
+        }
+
+        .amount-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 800;
+            font-size: 1.1rem;
+        }
+
+        .tx-badge {
+            font-weight: 800;
+            font-size: 0.65rem;
+            padding: 0.45rem 1rem;
+            border-radius: 50rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .audit-row {
+            transition: 0.2s;
+            border-bottom: 1px solid #f1f5f9 !important;
+        }
+
+            .audit-row:hover {
+                background-color: #f8fafc;
+            }
+
+        .search-container {
+            position: relative;
+            max-width: 450px;
+            width: 100%;
+        }
+
+        .search-input {
+            border-radius: 50rem;
+            padding: 0.8rem 1.5rem 0.8rem 3.5rem;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            font-weight: 500;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        @@media print {
+            .no-print {
+                display: none !important;
+            }
+
+            .main-overlay {
+                background: white;
+            }
+
+            .glass-card {
+                box-shadow: none;
+                border: 1px solid #eee;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-overlay">
+        <div class="container py-2">
+
+            <!-- TOP NAVIGATION -->
+            <nav class="top-nav no-print">
+                <a href="@Url.Action("Index", "Admin")" class="btn btn-light btn-premium border shadow-sm">
+                    <i class="bi bi-arrow-left me-2 text-primary"></i> HQ COMMAND
+                </a>
+                <div class="d-flex gap-2">
+                    <button onclick="window.print()" class="btn btn-dark btn-premium shadow-sm">
+                        <i class="bi bi-file-earmark-pdf me-2"></i> EXPORT AUDIT
+                    </button>
+                </div>
+            </nav>
+
+            <!-- HEADER -->
+            <header class="mb-5">
+                <h1 class="fw-800 text-dark mb-1">Global Financial Ledger</h1>
+                <p class="text-muted mb-0">Immutable record of all system credits, driver earnings, and customer payments.</p>
+            </header>
+
+            <div class="glass-card">
+                <!-- SEARCH & FILTER -->
+                <div class="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-4 no-print">
+                    <div class="search-container">
+                        <i class="bi bi-search search-icon"></i>
+                        <input type="text" id="txSearch" class="form-control search-input shadow-sm" placeholder="Search by name, email, or tracking #...">
+                    </div>
+                    <div class="text-end">
+                        <span class="text-muted smaller fw-bold text-uppercase d-block mb-1">Audit Status</span>
+                        <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill fw-bold border border-success border-opacity-25">
+                            <i class="bi bi-shield-check me-2"></i> SYSTEM VERIFIED
+                        </span>
+                    </div>
+                </div>
+
+                <!-- TABLE -->
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0" id="txTable">
+                        <thead>
+                            <tr class="text-uppercase small fw-bold text-muted border-bottom">
+                                <th class="ps-4 pb-3">TIMESTAMP</th>
+                                <th class="pb-3">ACCOUNT ENTITY (FULL NAME)</th>
+                                <th class="pb-3">EVENT TYPE</th>
+                                <th class="pb-3">REFERENCE NARRATIVE</th>
+                                <th class="text-end pe-4 pb-3">FLOW</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model != null && Model.Any())
+                            {
+                                foreach (var tx in Model)
+                                {
+                                    <tr class="audit-row">
+                                        <td class="ps-4">
+                                            <span class="time-code">
+                                                @tx.Timestamp.ToString("dd MMM yyyy, HH:mm")
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold text-dark">@tx.FullName</div>
+                                            <div class="small text-muted">@tx.UserEmail</div>
+                                        </td>
+                                        <td>
+                                            <span class="tx-badge @GetTxBadgeClass(tx.Type)">
+                                                @GetTxIcon(tx.Type) @(tx.Type ?? "System")
+                                            </span>
+                                        </td>
+                                        <td class="small text-muted" style="max-width: 300px;">
+                                            @tx.Description
+                                        </td>
+                                        <td class="text-end pe-4">
+                                            @{
+                                                string t = tx.Type?.ToLower() ?? "";
+                                                bool isNegative = t.Contains("payment") || t.Contains("withdrawal") || t.Contains("deduction");
+                                                string amountColor = isNegative ? "text-danger" : "text-success";
+                                                string prefix = isNegative ? "-" : "+";
+                                            }
+                                            <span class="amount-text @amountColor">
+                                                @prefix R @tx.Amount.ToString("N2")
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center py-5">
+                                        <i class="bi bi-bank2 display-1 text-light mb-4"></i>
+                                        <h4 class="fw-bold text-muted">Empty Ledger</h4>
+                                        <p class="text-muted">No financial activities have been logged yet.</p>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <footer class="text-center mt-5 text-muted small pb-4 no-print">
+                <i class="bi bi-lock-fill me-1"></i> End-to-End Encrypted Audit Trail | MyCourierSA Financial Security Layer
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        // Real-time Ledger Filter
+        document.getElementById('txSearch').addEventListener('keyup', function () {
+            let filter = this.value.toLowerCase();
+            document.querySelectorAll('.audit-row').forEach(row => {
+                row.style.display = row.innerText.toLowerCase().includes(filter) ? '' : 'none';
+            });
+        });
+    </script>
+</body>
+</html>
+
+@functions {
+    public string GetTxBadgeClass(string type)
+    {
+        string t = type?.ToLower() ?? "";
+        if (t.Contains("earning") || t.Contains("refund") || t.Contains("topup"))
+            return "bg-success-subtle text-success border border-success-subtle";
+
+        if (t.Contains("payment") || t.Contains("deduction"))
+            return "bg-warning-subtle text-warning border border-warning-subtle";
+
+        if (t.Contains("withdrawal") || t.Contains("void") || t.Contains("penalty"))
+            return "bg-danger-subtle text-danger border border-danger-subtle";
+
+        return "bg-secondary-subtle text-secondary border border-secondary-subtle";
+    }
+
+    public HtmlString GetTxIcon(string type)
+    {
+        string t = type?.ToLower() ?? "";
+        if (t.Contains("earning")) return new HtmlString("<i class='bi bi-briefcase-fill me-2'></i>");
+        if (t.Contains("refund")) return new HtmlString("<i class='bi bi-arrow-counterclockwise me-2'></i>");
+        if (t.Contains("topup")) return new HtmlString("<i class='bi bi-plus-circle-fill me-2'></i>");
+        if (t.Contains("payment")) return new HtmlString("<i class='bi bi-cart-check-fill me-2'></i>");
+        if (t.Contains("withdrawal")) return new HtmlString("<i class='bi bi-bank me-2'></i>");
+        return new HtmlString("<i class='bi bi-dot me-1'></i>");
+    }
+}}

@@ -1,0 +1,274 @@
+﻿@model MyCourierSA.Models.Shipment
+
+@{
+    Layout = null; // Makes it completely standalone
+    ViewBag.Title = "Warehouse Induction - " + Model.TrackingNumber;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewBag.Title - MyCourier</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, rgba(10, 15, 30, 0.85) 0%, rgba(10, 15, 30, 0.95) 100%), url('/Content/Images/courier-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #2c3e50;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            padding-bottom: 2rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 1.25rem;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 100%;
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        .inner-card {
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 1rem;
+            padding: 2rem;
+            height: 100%;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+        }
+
+        .tracking-text {
+            font-family: monospace;
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: #0d6efd;
+        }
+
+        /* Visual Routing Line */
+        .route-container {
+            position: relative;
+            padding-left: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .route-line {
+            position: absolute;
+            top: 10px;
+            bottom: 20px;
+            left: 5px;
+            width: 2px;
+            background: dashed 2px #adb5bd;
+            z-index: 1;
+        }
+
+        .route-point {
+            position: relative;
+            z-index: 2;
+            margin-bottom: 1.5rem;
+        }
+
+            .route-point::before {
+                content: '';
+                position: absolute;
+                left: -2.35rem;
+                top: 4px;
+                width: 14px;
+                height: 14px;
+                border-radius: 50%;
+                background: #fff;
+                border: 3px solid #0d6efd;
+            }
+
+            .route-point.destination::before {
+                border-color: #198754;
+                background: #198754;
+            }
+
+        .form-control-custom {
+            background-color: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+            .form-control-custom:focus {
+                border-color: #0d6efd;
+                box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+                background-color: #fff;
+            }
+
+        .btn-induct {
+            background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+            border: none;
+            color: white;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+            .btn-induct:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(25, 135, 84, 0.4);
+                color: white;
+            }
+    </style>
+</head>
+<body>
+
+    <!-- TOP NAVIGATION / BACK BUTTON -->
+    <div class="container pt-4 pb-3">
+        <a href="@Url.Action("Index", new { status = "AtWarehouse" })" class="btn btn-outline-light rounded-pill px-4 fw-bold">
+            <i class="bi bi-arrow-left me-2"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- MAIN TERMINAL INTERFACE -->
+    <main class="container flex-grow-1 d-flex align-items-center">
+        <div class="glass-panel">
+
+            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+                <h2 class="mb-0 fw-bold text-dark"><i class="bi bi-box-seam-fill text-warning me-2"></i> Induction Terminal</h2>
+                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold border border-warning"><i class="bi bi-upc-scan me-1"></i> Awaiting Scan</span>
+            </div>
+
+            <div class="row g-4">
+
+                <!-- LEFT COLUMN: PARCEL DOSSIER -->
+                <div class="col-lg-6">
+                    <div class="inner-card">
+                        <h6 class="text-uppercase fw-bold text-muted mb-1">Tracking Identity</h6>
+                        <div class="tracking-text mb-3">@Model.TrackingNumber</div>
+
+                        <div class="d-flex gap-2 mb-4">
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-3 py-2 rounded-pill">
+                                <i class="bi bi-box me-1"></i> @Model.ParcelType
+                            </span>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary px-3 py-2 rounded-pill">
+                                <i class="bi bi-speedometer2 me-1"></i> @Model.DeliveryOption
+                            </span>
+                            <span class="badge bg-dark text-white px-3 py-2 rounded-pill">
+                                @Model.ParcelWeight kg
+                            </span>
+                        </div>
+
+                        <h6 class="text-uppercase fw-bold text-muted mb-3 border-bottom pb-2">Manifest Routing</h6>
+                        <div class="route-container">
+                            <div class="route-line"></div>
+
+                            <!-- Origin -->
+                            <div class="route-point">
+                                <div class="text-uppercase text-muted fw-bold" style="font-size: 0.75rem;">Origin</div>
+                                <div class="fw-bold fs-5">@Model.SenderCity, @Model.SenderProvince</div>
+                                <div class="text-muted small">@Model.SenderName</div>
+                            </div>
+
+                            <!-- Destination -->
+                            <div class="route-point destination">
+                                <div class="text-uppercase text-success fw-bold" style="font-size: 0.75rem;">Destination</div>
+                                <div class="fw-bold fs-5">@Model.ReceiverCity, @Model.ReceiverProvince</div>
+                                <div class="text-muted small">@Model.ReceiverName</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: ACTION / INSPECTION FORM -->
+                <div class="col-lg-6">
+                    <div class="inner-card border-primary border-opacity-25" style="background: rgba(13, 110, 253, 0.02);">
+                        <h5 class="fw-bold text-dark mb-4"><i class="bi bi-clipboard-check text-primary me-2"></i> Inspection & Sorting</h5>
+
+                        <!-- Intelligent Routing Alert -->
+                        @if (ViewBag.IsSameCity != null && (bool)ViewBag.IsSameCity)
+                        {
+                            <div class="alert bg-success bg-opacity-10 border-success border-start border-5 text-dark mb-4 d-flex align-items-center shadow-sm">
+                                <i class="bi bi-geo-alt-fill fs-2 text-success me-3"></i>
+                                <div>
+                                    <h6 class="fw-bold mb-0 text-success">Local Delivery Detected</h6>
+                                    <span class="fs-5 fw-bolder font-monospace">@ViewBag.SuggestedBin</span>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert bg-warning bg-opacity-10 border-warning border-start border-5 text-dark mb-4 d-flex align-items-center shadow-sm">
+                                <i class="bi bi-truck fs-2 text-warning me-3"></i>
+                                <div>
+                                    <h6 class="fw-bold mb-0 text-warning text-dark">National / Regional Routing</h6>
+                                    <span class="fs-5 fw-bolder font-monospace">@ViewBag.SuggestedBin</span>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- The Induction Form -->
+                        @using (Html.BeginForm("ProcessAtWarehouse", "Dispatcher", FormMethod.Post, new { id = "inductionForm" }))
+                        {
+                            @Html.AntiForgeryToken()
+
+                            <!-- Hidden ID required by Controller -->
+                            <input type="hidden" name="id" value="@Model.Id" />
+
+                            <div class="mb-4">
+                                <label for="condition" class="form-label fw-bold text-secondary text-uppercase" style="font-size: 0.8rem;">Physical Condition</label>
+                                <select name="condition" id="condition" class="form-select form-control-custom" required>
+                                    <option value="" disabled selected>Select Inspection Result...</option>
+                                    <option value="Intact">✅ Intact (Good Condition)</option>
+                                    <option value="Minor Damage">⚠️ Minor Exterior Damage</option>
+                                    <option value="Needs Repackaging">📦 Needs Repackaging</option>
+                                    <option value="Severe Damage">❌ Severe Damage / Leaking</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="sortingBin" class="form-label fw-bold text-secondary text-uppercase" style="font-size: 0.8rem;">Assigned Sorting Bin</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-inboxes text-muted"></i></span>
+                                    <input type="text" name="sortingBin" id="sortingBin" class="form-control form-control-custom border-start-0 ps-0 text-uppercase font-monospace fs-5" value="@ViewBag.SuggestedBin" required />
+                                </div>
+                                <div class="form-text mt-2"><i class="bi bi-info-circle me-1"></i> Verify or adjust the physical bin placement.</div>
+                            </div>
+
+                            <div class="d-grid mt-5">
+                                <button type="submit" class="btn btn-induct btn-lg shadow-sm">
+                                    <i class="bi bi-check2-circle me-2 fs-5 align-middle"></i> Receive & Print Label
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Optional: Add simple form validation visual feedback before submission
+        document.getElementById('inductionForm').addEventListener('submit', function(e) {
+            const condition = document.getElementById('condition').value;
+            if(!condition) {
+                e.preventDefault();
+                alert('Please select a physical condition before inducting the parcel.');
+            }
+        });
+    </script>
+</body>
+</html>

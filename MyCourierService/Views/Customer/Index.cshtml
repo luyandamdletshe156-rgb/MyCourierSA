@@ -1,0 +1,269 @@
+﻿@using MyCourierSA.Constants
+@using System.Linq
+@model IEnumerable<MyCourierSA.Models.Shipment>
+@{
+    Layout = null;
+    ViewBag.Title = "Customer Dashboard";
+
+    var shipments = Model?.ToList() ?? new List<MyCourierSA.Models.Shipment>();
+
+    int totalCount = shipments.Count;
+    int pendingCount = shipments.Count(s => s.Status == AppConstants.ShipmentStatuses.Pending || s.Status == AppConstants.ShipmentStatuses.Approved);
+    int deliveredCount = shipments.Count(s => s.Status == AppConstants.ShipmentStatuses.Delivered);
+    int transitCount = shipments.Count(s => s.Status != AppConstants.ShipmentStatuses.Pending &&
+                                            s.Status != AppConstants.ShipmentStatuses.Approved &&
+                                            s.Status != AppConstants.ShipmentStatuses.Delivered &&
+                                            s.Status != AppConstants.ShipmentStatuses.Cancelled);
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewBag.Title - MyCourier Portal</title>
+
+    <!-- Premium Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+
+    <style>
+        :root {
+            --primary-accent: #0ea5e9;
+            --success-accent: #10b981;
+            --glass-white: rgba(255, 255, 255, 0.95);
+        }
+
+        body {
+            margin: 0; padding: 0; min-height: 100vh;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.98) 100%),
+                        url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1920&q=80');
+            background-size: cover; background-attachment: fixed;
+            color: #1e293b; font-family: 'Inter', sans-serif;
+        }
+
+        h1, h2, h3, h4, .fw-bold { font-family: 'Poppins', sans-serif; }
+
+        .glass-panel {
+            background: var(--glass-white); backdrop-filter: blur(20px);
+            border-radius: 2rem; padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            margin-bottom: 2rem;
+        }
+
+        /* Action Tiles */
+        .action-tile {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 1.5rem; border-radius: 1.5rem; background: #fff;
+            color: #475569; text-decoration: none; transition: 0.3s;
+            border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .action-tile:hover { transform: translateY(-5px); color: var(--primary-accent); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .tile-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1rem; }
+
+        /* Stat Card */
+        .stat-card {
+            background: #fff; border-radius: 1.5rem; padding: 1.5rem;
+            position: relative; overflow: hidden; border: 1px solid #f1f5f9;
+        }
+        .stat-card h2 { font-size: 2rem; font-weight: 800; margin: 0; }
+        .stat-card i { position: absolute; right: -10px; bottom: -10px; font-size: 4.5rem; opacity: 0.05; }
+
+        /* Shipment Card */
+        .shipment-card {
+            background: #fff; border-radius: 1.5rem; border: 1px solid #f1f5f9;
+            transition: 0.3s ease; overflow: hidden; height: 100%;
+        }
+        .shipment-card:hover { transform: scale(1.02); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+
+        .shipment-header { padding: 1.25rem; background: #f8fafc; border-bottom: 1px solid #f1f5f9; }
+
+        /* Progress System */
+        .track-wrapper { height: 6px; background: #f1f5f9; width: 100%; }
+        .track-bar { height: 100%; transition: width 1s ease; }
+
+        /* Route Indicator */
+        .route-path { position: relative; padding-left: 25px; }
+        .route-path::before {
+            content: ""; position: absolute; left: 6px; top: 8px; bottom: 8px;
+            width: 2px; border-left: 2px dashed #cbd5e1;
+        }
+        .dot { position: absolute; left: 0; width: 14px; height: 14px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+        .dot-start { top: 0; background: var(--primary-accent); }
+        .dot-end { bottom: 0; background: var(--success-accent); }
+
+        .btn-track-action { background: #e0f2fe; color: #0369a1; border: none; border-radius: 12px; font-weight: 700; }
+        .btn-track-action:hover { background: #0369a1; color: #fff; }
+
+        .fade-in { animation: fadeIn 0.8s ease forwards; }
+        @@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div class="container py-5">
+        <!-- TOP NAV / GREETING -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-5 fade-in">
+            <div>
+                <h1 class="text-white fw-bold mb-1">Command Center</h1>
+                <p class="text-white-50 mb-0"><i class="bi bi-person-circle me-2"></i> Welcome back, @(ViewBag.UserName ?? "User")</p>
+            </div>
+            <div class="d-flex gap-3">
+                <div class="bg-white bg-opacity-10 backdrop-blur rounded-pill px-4 py-2 text-white border border-white border-opacity-25">
+                    <i class="bi bi-wallet2 text-info me-2"></i><strong>R @(ViewBag.WalletBalance != null ? ViewBag.WalletBalance.ToString("N2") : "0.00")</strong>
+                </div>
+                @using (Html.BeginForm("LogOff", "Account", FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger rounded-circle shadow"><i class="bi bi-power"></i></button>
+                }
+            </div>
+        </div>
+
+        <!-- QUICK ACTIONS & STATS -->
+        <div class="glass-panel fade-in">
+            <div class="row g-4 mb-5">
+                <div class="col-6 col-md-3">
+                    <a href="@Url.Action("CreateShipment", "Customer")" class="action-tile">
+                        <div class="tile-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-plus-lg"></i></div>
+                        <span class="fw-bold">Book Parcel</span>
+                    </a>
+                </div>
+                <div class="col-6 col-md-3">
+                    <a href="@Url.Action("Wallet", "Customer")" class="action-tile">
+                        <div class="tile-icon bg-success bg-opacity-10 text-success"><i class="bi bi-credit-card"></i></div>
+                        <span class="fw-bold">Top-up Wallet</span>
+                    </a>
+                </div>
+                <div class="col-6 col-md-3">
+                    <a href="@Url.Action("History", "Customer")" class="action-tile">
+                        <div class="tile-icon bg-info bg-opacity-10 text-info"><i class="bi bi-clock-history"></i></div>
+                        <span class="fw-bold">History</span>
+                    </a>
+                </div>
+                <div class="col-6 col-md-3">
+                    <a href="@Url.Action("Support", "Customer")" class="action-tile">
+                        <div class="tile-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-headset"></i></div>
+                        <span class="fw-bold">Support</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-3 col-6">
+                    <div class="stat-card">
+                        <small class="text-muted fw-bold text-uppercase tracking-wider">Total</small>
+                        <h2>@totalCount</h2>
+                        <i class="bi bi-archive"></i>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-card">
+                        <small class="text-warning fw-bold text-uppercase tracking-wider">Pending</small>
+                        <h2>@pendingCount</h2>
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-card">
+                        <small class="text-primary fw-bold text-uppercase tracking-wider">Transit</small>
+                        <h2>@transitCount</h2>
+                        <i class="bi bi-truck"></i>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-card">
+                        <small class="text-success fw-bold text-uppercase tracking-wider">Arrived</small>
+                        <h2>@deliveredCount</h2>
+                        <i class="bi bi-check-all"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LIVE SHIPMENTS -->
+        <div class="glass-panel fade-in">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold m-0 text-dark">Live Shipments</h4>
+                <a href="@Url.Action("History", "Customer")" class="text-decoration-none fw-bold small">View All Registry <i class="bi bi-chevron-right"></i></a>
+            </div>
+
+            @if (!shipments.Any())
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox-fill display-1 text-light"></i>
+                    <p class="text-muted mt-3">No active parcels found. Ready to ship something?</p>
+                    <a href="@Url.Action("CreateShipment", "Customer")" class="btn btn-primary rounded-pill px-4 fw-bold">Book Now</a>
+                </div>
+            }
+            else
+            {
+                <div class="row g-4">
+                    @foreach (var s in shipments.OrderByDescending(x => x.CreatedDate).Take(6))
+                    {
+                        int progress = 5;
+                        string statusLabel = "Processing Request";
+                        string barClass = "bg-primary";
+                        string badgeClass = "bg-secondary-subtle text-secondary";
+
+                        switch (s.Status)
+                        {
+                            case AppConstants.ShipmentStatuses.Pending: progress = 15; statusLabel = "Awaiting Approval"; badgeClass = "bg-warning-subtle text-warning"; break;
+                            case AppConstants.ShipmentStatuses.Approved: progress = 30; statusLabel = "Scheduling Pickup"; badgeClass = "bg-info-subtle text-info"; break;
+                            case AppConstants.ShipmentStatuses.Collected: progress = 50; statusLabel = "With Driver"; barClass = "bg-info"; break;
+                            case AppConstants.ShipmentStatuses.AtWarehouse: progress = 70; statusLabel = "Sorting at Hub"; break;
+                            case AppConstants.ShipmentStatuses.InTransit: progress = 85; statusLabel = "Out for Delivery"; break;
+                            case AppConstants.ShipmentStatuses.Delivered: progress = 100; statusLabel = "Delivered"; barClass = "bg-success"; badgeClass = "bg-success-subtle text-success"; break;
+                            case AppConstants.ShipmentStatuses.Cancelled: progress = 0; statusLabel = "Cancelled"; barClass = "bg-danger"; badgeClass = "bg-danger-subtle text-danger"; break;
+                        }
+
+                        <div class="col-lg-4 col-md-6">
+                            <div class="shipment-card shadow-sm">
+                                <div class="shipment-header d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold text-primary small">#@s.TrackingNumber</span>
+                                    <span class="badge @badgeClass rounded-pill" style="font-size: 0.65rem">@s.Status</span>
+                                </div>
+
+                                <div class="p-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <small class="fw-bold text-muted" style="font-size: 0.65rem">@statusLabel</small>
+                                        <small class="fw-bold text-dark" style="font-size: 0.65rem">@progress%</small>
+                                    </div>
+                                    <div class="track-wrapper rounded-pill overflow-hidden">
+                                        <div class="track-bar @barClass" style="width: @progress%"></div>
+                                    </div>
+                                </div>
+
+                                <div class="px-4 py-3">
+                                    <div class="route-path mb-4">
+                                        <div class="dot dot-start"></div>
+                                        <div class="mb-3">
+                                            <small class="text-muted d-block" style="font-size: 0.6rem">ORIGIN</small>
+                                            <span class="fw-bold small">@s.SenderCity</span>
+                                        </div>
+                                        <div class="dot dot-end"></div>
+                                        <div>
+                                            <small class="text-muted d-block" style="font-size: 0.6rem">DESTINATION</small>
+                                            <span class="fw-bold small">@s.ReceiverName</span>
+                                            <div class="text-muted" style="font-size: 0.7rem">@s.ReceiverCity, @s.ReceiverProvince</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex gap-2">
+                                        <a href="@Url.Action("Details", "Customer", new { id = s.Id })" class="btn btn-light border flex-grow-1 rounded-pill fw-bold btn-sm">Details</a>
+                                        <a href="@Url.Action("TrackShipment", "Customer", new { trackingNumber = s.TrackingNumber })" class="btn btn-track-action flex-grow-1 btn-sm">Track</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

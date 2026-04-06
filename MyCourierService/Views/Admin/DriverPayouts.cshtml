@@ -1,0 +1,295 @@
+﻿@model IEnumerable<MyCourierSA.Models.DriverPayoutViewModel>
+@{
+    Layout = null;
+    ViewBag.Title = "Driver Disbursement HQ";
+
+    // Financial Liability Summary - calculates totals from the model
+    decimal totalOwedToDrivers = Model?.Any() == true ? Model.Sum(x => x.CurrentBalance) : 0m;
+    decimal totalEarnedThisMonth = Model?.Any() == true ? Model.Sum(x => x.TotalEarnedThisMonth) : 0m;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payout Center - MyCourierSA</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #4361ee;
+            --success: #06d6a0;
+            --danger: #ef476f;
+            --dark: #0f172a;
+        }
+
+        body {
+            background: #f8fafc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .main-overlay {
+            background: linear-gradient(135deg, rgba(245, 247, 250, 0.98) 0%, rgba(230, 235, 245, 0.98) 100%);
+            min-height: 100vh;
+            backdrop-filter: blur(12px);
+            padding-bottom: 5rem;
+        }
+
+        .glass-card {
+            background: white;
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+            margin-bottom: 1.5rem;
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 0;
+        }
+
+        .btn-premium {
+            border-radius: 50rem;
+            padding: 0.7rem 1.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        .currency {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 800;
+        }
+
+        .kpi-box {
+            border-radius: 20px;
+            padding: 1.5rem;
+            border: 1px solid rgba(0,0,0,0.03);
+            background: #fff;
+        }
+
+        .search-input {
+            border-radius: 50rem;
+            padding: 0.8rem 1.5rem 0.8rem 3.5rem;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            font-weight: 500;
+            width: 350px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        .table thead th {
+            background: #f8fafc;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 1rem;
+            border: none;
+        }
+
+        .table tbody td {
+            padding: 1.2rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .payout-row {
+            transition: 0.2s;
+        }
+
+            .payout-row:hover {
+                background-color: #f8fafc;
+            }
+
+        .form-settle {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 5px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .input-settle {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            width: 100px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        @@media print {
+            .no-print {
+                display: none !important;
+            }
+
+            .main-overlay {
+                background: white;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-overlay">
+        <div class="container py-2">
+
+            <!-- TOP NAVIGATION -->
+            <nav class="top-nav no-print">
+                <a href="@Url.Action("Index", "Admin")" class="btn btn-light btn-premium border shadow-sm">
+                    <i class="bi bi-arrow-left me-2 text-primary"></i> HQ COMMAND
+                </a>
+                <h3 class="fw-800 text-dark mb-0">Disbursement <span class="text-primary">Registry</span></h3>
+                <button onclick="window.print()" class="btn btn-dark btn-premium shadow-sm">
+                    <i class="bi bi-printer me-2"></i> PRINT AUDIT
+                </button>
+            </nav>
+
+            <!-- MESSAGES -->
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success border-0 shadow-sm rounded-4 mb-4 fw-bold no-print">
+                    <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger border-0 shadow-sm rounded-4 mb-4 fw-bold no-print">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
+                </div>
+            }
+
+            <!-- FINANCIAL SUMMARY -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-6">
+                    <div class="kpi-box border-start border-4 border-danger shadow-sm h-100">
+                        <small class="text-muted fw-bold text-uppercase smaller ls-1">Current Wallet Liability</small>
+                        <h2 class="fw-800 mb-0 currency text-danger mt-1">R @totalOwedToDrivers.ToString("N2")</h2>
+                        <p class="small text-muted mb-0">Total amount owed to all fleet agents across the system.</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="kpi-box border-start border-4 border-primary shadow-sm h-100">
+                        <small class="text-muted fw-bold text-uppercase smaller ls-1">Total Performance (MTD)</small>
+                        <h2 class="fw-800 mb-0 currency text-primary mt-1">R @totalEarnedThisMonth.ToString("N2")</h2>
+                        <p class="small text-muted mb-0">Total commissions earned by drivers this month.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAYMENT TABLE -->
+            <div class="glass-card">
+                <div class="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-4 no-print">
+                    <h5 class="fw-800 mb-0">Fleet Agent Balances</h5>
+                    <div class="position-relative">
+                        <i class="bi bi-search search-icon"></i>
+                        <input type="text" id="payoutSearch" class="form-control search-input shadow-sm" placeholder="Search by name or email...">
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table align-middle" id="payoutTable">
+                        <thead>
+                            <tr>
+                                <th class="ps-3">AGENT ENTITY</th>
+                                <th class="text-center">MONTHLY PERFORMANCE</th>
+                                <th class="text-center">OWED (WALLET BALANCE)</th>
+                                <th class="text-end pe-3 no-print">ACTION: SETTLE BALANCE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model != null && Model.Any())
+                            {
+                                foreach (var p in Model)
+                                {
+                                    <tr class="payout-row">
+                                        <td class="ps-3">
+                                            <div class="fw-800 text-dark">@p.FullName</div>
+                                            <div class="text-muted smaller">@p.Email</div>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="fw-bold text-muted currency smaller">Earned: R @p.TotalEarnedThisMonth.ToString("N2")</div>
+                                        </td>
+                                        <td class="text-center">
+                                            @if (p.CurrentBalance > 0)
+                                            {
+                                                <span class="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill fw-800">
+                                                    R @p.CurrentBalance.ToString("N2")
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-light text-muted px-3 py-2 rounded-pill fw-bold border">
+                                                    R 0.00
+                                                </span>
+                                            }
+                                        </td>
+                                        <td class="text-end pe-3 no-print">
+                                            @if (p.CurrentBalance > 0)
+                                            {
+                                                using (Html.BeginForm("SettleBalance", "Admin", FormMethod.Post, new { @class = "form-settle justify-content-end" }))
+                                                {
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="userId" value="@p.DriverId" />
+                                                    <input type="hidden" name="reference" value="EFT-PAY-@DateTime.Now.ToString("yyyyMM")" />
+
+                                                    <input type="number" name="amount" step="0.01" max="@p.CurrentBalance" value="@p.CurrentBalance" class="input-settle" required />
+                                                    <button type="submit" class="btn btn-dark btn-sm rounded-pill px-3 fw-bold" onclick="return confirm('Confirm payout for @p.FullName? This will deduct from their wallet.')">
+                                                        PAY
+                                                    </button>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted smaller fw-bold px-3">No Action Required</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="4" class="text-center py-5 text-muted">
+                                        <i class="bi bi-cash-stack display-1 opacity-10 mb-3 d-block"></i>
+                                        No driver accounts found in the registry.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <footer class="text-center mt-5 text-muted small pb-4 no-print">
+                © @DateTime.Now.Year MyCourier HQ - Financial Operations & Fleet Disbursement Audit
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        // Real-time table filter
+        document.getElementById('payoutSearch').addEventListener('keyup', function () {
+            let filter = this.value.toLowerCase();
+            document.querySelectorAll('.payout-row').forEach(row => {
+                row.style.display = row.innerText.toLowerCase().includes(filter) ? '' : 'none';
+            });
+        });
+    </script>
+</body>
+</html>

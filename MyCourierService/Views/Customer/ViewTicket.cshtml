@@ -1,0 +1,207 @@
+﻿@model MyCourierSA.Models.SupportTicket
+@using Microsoft.AspNet.Identity
+@{
+    Layout = null;
+    ViewBag.Title = "Conversation - #" + Model.Id;
+    string currentUserId = User.Identity.GetUserId();
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewBag.Title | MyCourierSA</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+    <style>
+        body {
+            background: linear-gradient(135deg, rgba(10, 15, 30, 0.85), rgba(10, 15, 30, 0.95)), url('/Content/Images/courier-bg.jpg');
+            background-size: cover;
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 40px 0;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+            color: #2c3e50;
+            max-width: 900px;
+            margin: auto;
+        }
+
+        .chat-window {
+            height: 450px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f1f3f5;
+            border-radius: 1rem;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        /* Message Bubbles */
+        .bubble {
+            max-width: 75%;
+            padding: 12px 18px;
+            border-radius: 1.25rem;
+            font-size: 0.95rem;
+            position: relative;
+            line-height: 1.4;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        /* Customer Message (Right) */
+        .msg-me {
+            align-self: flex-end;
+            background: #0d6efd;
+            color: white;
+            border-bottom-right-radius: 0.2rem;
+        }
+
+        /* Admin Message (Left) */
+        .msg-admin {
+            align-self: flex-start;
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 0.2rem;
+            border: 1px solid #dee2e6;
+        }
+
+        .time-label {
+            font-size: 0.65rem;
+            opacity: 0.7;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .msg-me .time-label {
+            text-align: right;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 800;
+        }
+
+        .reply-box {
+            background: #fff;
+            border-radius: 1rem;
+            padding: 10px;
+            border: 2px solid #eee;
+            transition: 0.3s;
+        }
+
+            .reply-box:focus-within {
+                border-color: #0d6efd;
+                box-shadow: 0 0 15px rgba(13,110,253,0.1);
+            }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Top Nav -->
+        <div class="d-flex justify-content-between align-items-center mb-4 px-2">
+            <a href="@Url.Action("Support", "Customer")" class="btn btn-outline-light rounded-pill px-4 fw-bold shadow-sm">
+                <i class="bi bi-arrow-left me-2"></i> Back to Hub
+            </a>
+            <div class="text-white text-end">
+                <small class="opacity-75 d-block">Ticket Reference</small>
+                <span class="fw-bold">#@Model.Id.ToString("D4")</span>
+            </div>
+        </div>
+
+        <div class="glass-panel">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-start mb-4 border-bottom pb-3">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">@Model.Subject</h3>
+                    <p class="text-muted small mb-0">Created on @Model.CreatedDate.ToString("f")</p>
+                </div>
+                <span class="badge rounded-pill px-3 py-2 status-badge @(Model.Status == "Resolved" ? "bg-success" : "bg-warning text-dark")">
+                    @Model.Status
+                </span>
+            </div>
+
+            <!-- Chat Window -->
+            <div class="chat-window shadow-inner" id="chatWindow">
+
+                <!-- Initial Message -->
+                <div class="bubble msg-me">
+                    <div class="small fw-bold mb-1 opacity-75">You</div>
+                    @Model.InitialMessage
+                    <span class="time-label">@Model.CreatedDate.ToString("t")</span>
+                </div>
+
+                <!-- Replies -->
+                @foreach (var reply in Model.Replies.OrderBy(r => r.CreatedDate))
+                {
+                    bool isMe = reply.AuthorId == currentUserId;
+                    <div class="bubble @(isMe ? "msg-me" : "msg-admin")">
+                        <div class="small fw-bold mb-1 @(isMe ? "opacity-75" : "text-primary")">
+                            @(isMe ? "You" : "MyCourier Support")
+                        </div>
+                        @reply.Message
+                        <span class="time-label">@reply.CreatedDate.ToString("g")</span>
+                    </div>
+                }
+            </div>
+
+            <!-- Reply Input -->
+            @if (Model.Status != "Closed")
+            {
+                using (Html.BeginForm("PostReply", "Customer", FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ticketId" value="@Model.Id" />
+
+                    <div class="reply-box">
+                        <textarea name="message" class="form-control border-0 shadow-none" rows="3" placeholder="Type your follow-up message here..." required></textarea>
+                        <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                            <small class="text-muted ps-2"><i class="bi bi-info-circle me-1"></i> Admin will be notified of your reply.</small>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">
+                                Send Message <i class="bi bi-send ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="alert alert-secondary text-center rounded-4 fw-bold py-3">
+                    <i class="bi bi-lock-fill me-2"></i> This ticket has been closed. If you need further help, please open a new inquiry.
+                </div>
+            }
+
+            <!-- Context Card (If linked to shipment) -->
+            @if (Model.ShipmentId != null)
+            {
+                <div class="mt-4 p-3 bg-light rounded-4 border d-flex align-items-center justify-content-between">
+                    <div>
+                        <i class="bi bi-box-seam text-primary fs-4 me-3"></i>
+                        <span class="fw-bold">Related Shipment: @Model.RelatedShipment.TrackingNumber</span>
+                    </div>
+                    <a href="@Url.Action("Details", "Customer", new { id = Model.ShipmentId })" class="btn btn-sm btn-outline-primary rounded-pill px-3">Track Parcel</a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-scroll to the bottom of the chat window
+        var objDiv = document.getElementById("chatWindow");
+        objDiv.scrollTop = objDiv.scrollHeight;
+    </script>
+</body>
+</html>

@@ -1,0 +1,251 @@
+﻿@model MyCourierSA.Models.Shipment
+@using MyCourierSA.Constants
+@{
+    Layout = null;
+    ViewBag.Title = "Assign Courier Task";
+
+    var assignmentType = ViewBag.AssignmentType ?? "Task";
+    bool isPickup = assignmentType.ToString().Contains("Pickup");
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title - Dispatch Command</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body {
+            position: relative;
+            min-height: 100vh;
+            background: linear-gradient(rgba(10, 15, 30, 0.85), rgba(10, 15, 30, 0.95)), url('/Content/Images/courier-bg.jpg');
+            background-size: cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 1.5rem;
+            max-width: 1000px;
+            width: 100%;
+            overflow: hidden;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .panel-header {
+            background: #1a1a1a;
+            color: #fff;
+            padding: 1.5rem 2.5rem;
+            border-bottom: 4px solid @(isPickup ? "#ffc107" : "#0d6efd");
+        }
+
+        .panel-body { padding: 2.5rem; color: #2c3e50; }
+
+        .route-timeline {
+            position: relative;
+            padding-left: 3rem;
+        }
+
+        .route-timeline::before {
+            content: '';
+            position: absolute;
+            left: 15px; top: 10px; bottom: 10px;
+            width: 2px; border-left: 2px dashed #dee2e6;
+        }
+
+        .timeline-point {
+            position: absolute;
+            left: 0; width: 32px; height: 32px;
+            border-radius: 50%; background: #fff;
+            display: flex; align-items: center; justify-content: center;
+            border: 2px solid #dee2e6; z-index: 2;
+        }
+
+        .point-active { border-color: #0d6efd; color: #0d6efd; box-shadow: 0 0 10px rgba(13,110,253,0.3); }
+
+        .driver-preview-card {
+            background-color: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 1rem;
+            transition: all 0.3s ease;
+            min-height: 150px;
+        }
+
+        .driver-preview-card.active {
+            background-color: #f0f7ff;
+            border: 2px solid #0d6efd;
+            border-left: 8px solid #0d6efd;
+        }
+
+        .tracking-badge {
+            background: rgba(255,255,255,0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-family: monospace;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="glass-panel shadow-lg">
+        <!-- HEADER -->
+        <div class="panel-header d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-0 fw-bold text-uppercase tracking-widest">
+                    <i class="bi bi-person-badge-fill me-2"></i> Courier Assignment
+                </h4>
+                <small class="opacity-75">Task ID: #@(Model.Id.ToString("D5"))</small>
+            </div>
+            <div class="tracking-badge border border-secondary">
+                TRK: @Model.TrackingNumber
+            </div>
+        </div>
+
+        <div class="panel-body">
+            @using (Html.BeginForm("AssignDriver", "Dispatcher", FormMethod.Post, new { id = "assignForm" }))
+            {
+                @Html.AntiForgeryToken()
+                @Html.HiddenFor(m => m.Id)
+
+                <div class="row g-5">
+                    <!-- LEFT COLUMN: ROUTE OVERVIEW -->
+                    <div class="col-lg-6 border-end">
+                        <h6 class="fw-bold text-muted text-uppercase small mb-4">Logistics Route Overview</h6>
+
+                        <div class="route-timeline">
+                            <!-- ORIGIN -->
+                            <div class="mb-5 position-relative">
+                                <div class="timeline-point @(isPickup ? "point-active" : "")">
+                                    <i class="bi bi-geo-alt-fill"></i>
+                                </div>
+                                <div class="@(isPickup ? "fw-bold text-dark" : "text-muted")">
+                                    <small class="text-uppercase d-block mb-1" style="font-size: 0.7rem;">Origin / Pickup</small>
+                                    <div class="fs-5">@Model.SenderCity</div>
+                                    <div class="small">@Model.SenderAddress</div>
+                                </div>
+                            </div>
+
+                            <!-- DESTINATION -->
+                            <div class="position-relative">
+                                <div class="timeline-point @(!isPickup ? "point-active" : "")">
+                                    <i class="bi bi-flag-fill"></i>
+                                </div>
+                                <div class="@(!isPickup ? "fw-bold text-dark" : "text-muted")">
+                                    <small class="text-uppercase d-block mb-1" style="font-size: 0.7rem;">Destination / Delivery</small>
+                                    <div class="fs-5">@Model.ReceiverCity</div>
+                                    <div class="small">@Model.ReceiverAddress</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PARCEL DETAILS STRIP -->
+                        <div class="mt-5 p-3 bg-light rounded-3 d-flex justify-content-between align-items-center border shadow-sm">
+                            <div>
+                                <small class="text-muted text-uppercase d-block fw-bold" style="font-size: 0.6rem;">Specs</small>
+                                <span class="fw-bold">@Model.ParcelWeight kg / @Model.ParcelType</span>
+                            </div>
+                            <div class="text-end">
+                                @if (Model.IsFragile)
+                                {
+                                    <span class="badge bg-danger"><i class="bi bi-exclamation-triangle me-1"></i> FRAGILE</span>
+                                }
+                                <span class="badge bg-dark">@Model.DeliveryOption</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 p-3 bg-primary bg-opacity-10 rounded-3 border border-primary border-opacity-25">
+                            <h6 class="fw-bold text-primary mb-1 small"><i class="bi bi-info-circle-fill me-2"></i>Dispatcher Note:</h6>
+                            <p class="small mb-0 text-dark">
+                                You are assigning a courier for <strong>@assignmentType</strong>.
+                                Ensure the courier is aware of any specific handling requirements.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN: SELECTION & ACTION -->
+                    <div class="col-lg-6 d-flex flex-column">
+                        <h6 class="fw-bold text-muted text-uppercase small mb-4">Authorized Personnel Selection</h6>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small">Search & Select Available Courier</label>
+                            @Html.DropDownList(
+                                "assignedDriverId",
+                                (SelectList)ViewBag.Drivers,
+                                "-- Select Personnel --",
+                                new { @class = "form-select form-select-lg border-2", id = "driverSelect", required = "required" })
+                        </div>
+
+                        <!-- PREVIEW AREA -->
+                        <div id="driverPreview" class="driver-preview-card d-flex flex-column align-items-center justify-content-center text-center p-4">
+                            <i class="bi bi-person-badge display-3 opacity-25 mb-2"></i>
+                            <p class="text-muted mb-0">Select a courier from the dropdown to view verification details.</p>
+                        </div>
+
+                        <!-- SUBMIT -->
+                        <div class="mt-auto pt-4">
+                            <button type="submit" class="btn btn-primary btn-lg w-100 py-3 fw-bold shadow mb-3">
+                                <i class="bi bi-shield-check me-2"></i> AUTHORIZE & ASSIGN
+                            </button>
+                            <a href="@Url.Action("Index", "Dispatcher")" class="btn btn-outline-secondary w-100 py-2 fw-bold">
+                                <i class="bi bi-x-lg me-2"></i> ABORT ASSIGNMENT
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("driverSelect").addEventListener("change", function () {
+            const preview = document.getElementById("driverPreview");
+            const val = this.value;
+            const text = this.options[this.selectedIndex].text;
+
+            if (!val) {
+                preview.classList.remove("active");
+                preview.innerHTML = `
+                        <i class="bi bi-person-badge display-3 opacity-25 mb-2"></i>
+                        <p class="text-muted mb-0">Select a courier from the dropdown to view verification details.</p>
+                    `;
+            } else {
+                preview.classList.add("active");
+                preview.innerHTML = `
+                        <div class="w-100 text-start">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-primary text-white rounded-circle p-3 me-3">
+                                    <i class="bi bi-person-check fs-2"></i>
+                                </div>
+                                <div>
+                                    <small class="text-uppercase text-muted fw-bold d-block" style="font-size: 0.7rem;">Authorized Courier</small>
+                                    <h4 class="mb-0 fw-bold text-dark">${text}</h4>
+                                </div>
+                            </div>
+                            <ul class="list-unstyled small mb-0">
+                                <li class="mb-1 text-success"><i class="bi bi-check2-circle me-2"></i>Identity Verified</li>
+                                <li class="mb-1 text-success"><i class="bi bi-check2-circle me-2"></i>Active Logistics Duty</li>
+                                <li class="text-muted"><i class="bi bi-clock me-2"></i>Task Time: ${new Date().toLocaleTimeString()}</li>
+                            </ul>
+                        </div>
+                    `;
+            }
+        });
+
+        // Form Submit loading state
+        document.getElementById("assignForm").onsubmit = function () {
+            const btn = this.querySelector('button[type="submit"]');
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Authorizing Task...';
+            btn.disabled = true;
+        };
+    </script>
+</body>
+</html>

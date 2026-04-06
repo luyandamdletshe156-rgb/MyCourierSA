@@ -1,0 +1,291 @@
+﻿@model PagedList.IPagedList<MyCourierSA.Models.StatusHistory>
+@using PagedList.Mvc
+@{
+    Layout = null; // Standalone Premium View
+    ViewBag.Title = "Operations Audit Trail";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewBag.Title - MyCourier HQ</title>
+
+    <!-- Google Fonts & Bootstrap -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css" />
+
+    <style>
+        :root {
+            --primary: #4361ee;
+            --success: #06d6a0;
+            --warning: #ffd166;
+            --danger: #ef476f;
+            --dark: #0f172a;
+        }
+
+        body {
+            background: #f8fafc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--dark);
+        }
+
+        .main-overlay {
+            background: linear-gradient(135deg, rgba(245, 247, 250, 0.98) 0%, rgba(230, 235, 245, 0.98) 100%);
+            min-height: 100vh;
+            padding-bottom: 5rem;
+        }
+
+        .glass-card {
+            background: white;
+            border-radius: 1.5rem;
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+            padding: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 0;
+        }
+
+        .time-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: #64748b;
+            background: #f1f5f9;
+            padding: 0.3rem 0.7rem;
+            border-radius: 8px;
+        }
+
+        /* Status Badge Logic */
+        .status-badge {
+            font-weight: 800;
+            font-size: 0.65rem;
+            padding: 0.45rem 1rem;
+            border-radius: 50rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .table thead th {
+            background: #f8fafc;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 1.2rem 1rem;
+            border: none;
+        }
+
+        .table tbody td {
+            padding: 1.2rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .search-input {
+            border-radius: 50rem;
+            padding: 0.8rem 1.5rem 0.8rem 3.5rem;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        /* Pagination Styling */
+        .pagination-container {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .pagination {
+            gap: 5px;
+        }
+
+            .pagination li a {
+                border-radius: 10px !important;
+                border: 1px solid #e2e8f0;
+                color: var(--primary);
+                padding: 8px 16px;
+                text-decoration: none;
+                font-weight: 700;
+            }
+
+            .pagination li.active span {
+                background-color: var(--primary) !important;
+                border-color: var(--primary) !important;
+                border-radius: 10px !important;
+                padding: 8px 16px;
+                color: white;
+                font-weight: 700;
+            }
+
+        .authorized-pill {
+            display: inline-flex;
+            align-items: center;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 0.3rem 0.8rem;
+            border-radius: 50rem;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        @@media print {
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-overlay">
+        <div class="container py-2">
+
+            <!-- NAVIGATION -->
+            <nav class="top-nav no-print">
+                <a href="@Url.Action("Index", "Admin")" class="btn btn-light rounded-pill px-4 fw-bold border shadow-sm">
+                    <i class="bi bi-arrow-left me-2 text-primary"></i> HQ COMMAND
+                </a>
+                <h3 class="fw-800 text-dark mb-0">Security <span class="text-primary">Audit Trail</span></h3>
+                <button onclick="window.print()" class="btn btn-dark rounded-pill px-4 fw-bold shadow-sm">
+                    <i class="bi bi-printer me-2"></i> PRINT LOGS
+                </button>
+            </nav>
+
+            <!-- HEADER -->
+            <header class="mb-5">
+                <h1 class="fw-800 text-dark mb-1">Permanent Operations Record</h1>
+                <p class="text-muted">High-fidelity log of every status transition and system event across the logistics network.</p>
+            </header>
+
+            <div class="glass-card">
+                <!-- SEARCH FORM -->
+                @using (Html.BeginForm("AuditLogs", "Admin", FormMethod.Get, new { @class = "d-flex justify-content-between align-items-center mb-5 flex-wrap gap-4 no-print" }))
+                {
+                    <div class="position-relative flex-grow-1">
+                        <i class="bi bi-search search-icon"></i>
+                        <input type="text" name="search" class="form-control search-input shadow-sm" placeholder="Filter by notes, status, or personnel..." value="@ViewBag.CurrentSearch">
+                    </div>
+                    <span class="badge bg-primary bg-opacity-10 text-primary px-4 py-2 rounded-pill fw-bold border border-primary border-opacity-25">
+                        <i class="bi bi-database-check me-2"></i> Total Events: @Model.TotalItemCount
+                    </span>
+                }
+
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr class="border-bottom">
+                                <th class="ps-4">TIMESTAMP</th>
+                                <th>REFERENCE ID</th>
+                                <th>EVENT TYPE</th>
+                                <th>INTERNAL NARRATIVE</th>
+                                <th class="text-end pe-4">AUTHORIZING ENTITY</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in Model)
+                            {
+                                <tr>
+                                    <td class="ps-4">
+                                        <span class="time-code">@log.Timestamp.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</span>
+                                    </td>
+                                    <td>
+                                        @if (log.Shipment != null)
+                                        {
+                                            <a href="@Url.Action("Details", "Admin", new { id = log.ShipmentId })" class="fw-800 text-primary text-decoration-none font-monospace">
+                                                #@log.Shipment.TrackingNumber
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="font-monospace text-muted smaller">ID: @log.ShipmentId</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="status-badge @GetBadgeColor(log.Status)">
+                                            @GetStatusIcon(log.Status) @log.Status
+                                        </span>
+                                    </td>
+                                    <td class="small text-muted" style="max-width: 300px;">
+                                        @(string.IsNullOrWhiteSpace(log.Notes) ? "Standard system state transition." : log.Notes)
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        @if (log.UpdatedBy != null)
+                                        {
+                                            <div class="authorized-pill">
+                                                <i class="bi bi-person-badge text-primary me-2"></i>
+                                                <span>@log.UpdatedBy.Name @log.UpdatedBy.Surname</span>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="authorized-pill bg-light text-muted">
+                                                <i class="bi bi-robot me-2"></i>
+                                                <span>SYSTEM AUTO</span>
+                                            </div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- PAGINATION -->
+                <div class="pagination-container no-print">
+                    @Html.PagedListPager(Model, page => Url.Action("AuditLogs", new { page, search = ViewBag.CurrentSearch }), new PagedListRenderOptions
+                    {
+                        DisplayLinkToFirstPage = PagedListDisplayMode.Always,
+                        DisplayLinkToLastPage = PagedListDisplayMode.Always,
+                        DisplayLinkToPreviousPage = PagedListDisplayMode.Always,
+                        DisplayLinkToNextPage = PagedListDisplayMode.Always,
+                        MaximumPageNumbersToDisplay = 5
+                    })
+                </div>
+            </div>
+
+            <footer class="text-center mt-5 text-muted small pb-4 no-print">
+                <i class="bi bi-shield-lock-fill me-2"></i> Secure Audit Ledger | Data Integrity: Verified | © @DateTime.Now.Year MyCourierSA
+            </footer>
+        </div>
+    </div>
+</body>
+</html>
+
+@functions {
+    public string GetBadgeColor(string status)
+    {
+        string s = status?.ToLower() ?? "";
+        if (s.Contains("cancel") || s.Contains("reject") || s.Contains("void") || s.Contains("failed")) return "bg-danger-subtle text-danger border border-danger-subtle";
+        if (s.Contains("approve") || s.Contains("deliver") || s.Contains("success")) return "bg-success-subtle text-success border border-success-subtle";
+        if (s.Contains("warehouse") || s.Contains("sort") || s.Contains("collect")) return "bg-warning-subtle text-warning border border-warning-subtle";
+        if (s.Contains("transit") || s.Contains("assign")) return "bg-primary-subtle text-primary border border-primary-subtle";
+        return "bg-secondary-subtle text-secondary border border-secondary-subtle";
+    }
+
+    public HtmlString GetStatusIcon(string status)
+    {
+        string s = status?.ToLower() ?? "";
+        if (s.Contains("deliver")) return new HtmlString("<i class='bi bi-check-circle-fill me-2'></i>");
+        if (s.Contains("transit")) return new HtmlString("<i class='bi bi-truck me-2'></i>");
+        if (s.Contains("warehouse")) return new HtmlString("<i class='bi bi-house-door-fill me-2'></i>");
+        if (s.Contains("collect")) return new HtmlString("<i class='bi bi-box-seam-fill me-2'></i>");
+        return new HtmlString("<i class='bi bi-dot me-1'></i>");
+    }
+}

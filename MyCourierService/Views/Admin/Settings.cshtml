@@ -1,0 +1,282 @@
+﻿@model List<MyCourierSA.Models.SystemSetting>
+@{
+    Layout = null;
+    ViewBag.Title = "Global System Configuration";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewBag.Title - HQ</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css" />
+
+    <style>
+        body {
+            background: url('https://images.unsplash.com/photo-1454165833767-027ffea9e77b?auto=format&fit=crop&q=80&w=2000') no-repeat center center fixed;
+            background-size: cover;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            padding: 2rem 1rem;
+            min-height: 100vh;
+        }
+
+        .main-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(240, 244, 248, 0.92);
+            backdrop-filter: blur(12px);
+            z-index: -1;
+        }
+
+        .config-wrapper {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #ffffff;
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-divider {
+            border-bottom: 2px solid #f1f5f9;
+            margin: 2.5rem 0 1.5rem 0;
+            padding-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            color: #1e293b;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.85rem;
+        }
+
+        .form-label {
+            font-weight: 700;
+            color: #64748b;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .settings-input {
+            border: 2px solid #e2e8f0;
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            color: #0f172a;
+            transition: all 0.2s ease;
+            background-color: #f8fafc;
+        }
+
+            .settings-input:focus {
+                background-color: #ffffff;
+                border-color: #2563eb;
+                box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+                outline: none;
+                z-index: 3;
+            }
+
+        .btn-save {
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 50rem;
+            padding: 1rem 3rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+        }
+
+            .btn-save:hover {
+                background: #1d4ed8;
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
+            }
+
+        .input-group-text {
+            background: #f1f5f9;
+            border: 2px solid #e2e8f0;
+            color: #64748b;
+            font-weight: 800;
+        }
+
+        .helper-text {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-overlay"></div>
+
+    <div class="config-wrapper">
+
+        <!-- Utility Top Bar -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <a href="@Url.Action("Index", "Admin")" class="btn btn-light bg-white shadow-sm rounded-pill px-4 fw-bold text-secondary border">
+                <i class="bi bi-arrow-left me-2"></i>Return to Command
+            </a>
+
+            @using (Html.BeginForm("LogOff", "Account", FormMethod.Post, new { id = "logoutForm", @class = "m-0" }))
+            {
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-danger shadow-sm rounded-pill px-4 fw-bold border-0" title="Emergency Sign Out">
+                    <i class="bi bi-power me-2"></i>System Sign Out
+                </button>
+            }
+        </div>
+
+        <div class="glass-card">
+
+            <header class="mb-4">
+                <h1 class="h3 fw-bold text-dark mb-2 d-flex align-items-center">
+                    <i class="bi bi-sliders text-primary me-3 fs-2"></i>System Configuration
+                </h1>
+                <p class="text-muted mb-0">Manage global variables for Pricing, Operational Maintenance, and Security rules.</p>
+            </header>
+
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-4 mb-4 d-flex align-items-center">
+                    <i class="bi bi-check-circle-fill fs-4 me-3 text-success"></i>
+                    <div class="fw-bold">@TempData["Success"]</div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @if (Model != null && Model.Any())
+            {
+                using (Html.BeginForm("Settings", "Admin", FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+
+                    <!-- 1. PRICING SECTION -->
+                    <div class="section-divider">
+                        <i class="bi bi-currency-dollar me-2 text-primary"></i> Financial Variables & Pricing
+                    </div>
+                    <div class="row g-4">
+                        @for (int i = 0; i < Model.Count; i++)
+                        {
+                            var keyLower = Model[i].Key.ToLower();
+                            bool isFinancial = keyLower.Contains("price") || keyLower.Contains("vat") || keyLower.Contains("fee") || keyLower.Contains("rate");
+
+                            if (isFinancial)
+                            {
+                                <div class="col-md-6">
+                                    <label class="form-label">@Model[i].Key</label>
+
+                                    <!-- Hidden key required for MVC Model Binding to preserve the List -->
+                                    <input type="hidden" name="settings[@i].Key" value="@Model[i].Key" />
+
+                                    <div class="input-group shadow-sm">
+                                        <!-- Prefix: Only show ZAR if it's an actual currency fee -->
+                                        @if (keyLower.Contains("price") || keyLower.Contains("fee"))
+                                        {
+                                            <span class="input-group-text border-end-0">ZAR</span>
+                                        }
+
+                                        <input type="text" name="settings[@i].Value" value="@Model[i].Value" class="form-control settings-input" required />
+
+                                        <!-- Suffix: Only show % if it's a percentage -->
+                                        @if (keyLower.Contains("percentage"))
+                                        {
+                                            <span class="input-group-text border-start-0">%</span>
+                                        }
+                                    </div>
+
+                                    <div class="helper-text">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        @if (keyLower.Contains("rate"))
+                                        {<text>Decimal format (e.g., 0.70 represents a 70% cut).</text> }
+                                    else
+                                    { <text>Used to calculate @Model[i].Key on active manifests.</text>}
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+
+                    <!-- 2. MAINTENANCE SECTION -->
+                    <div class="section-divider mt-5">
+                        <i class="bi bi-tools me-2 text-primary"></i> Operational & Maintenance Flags
+                    </div>
+                    <div class="row g-4">
+                        @for (int i = 0; i < Model.Count; i++)
+                        {
+                            var keyLower = Model[i].Key.ToLower();
+                            bool isFinancial = keyLower.Contains("price") || keyLower.Contains("vat") || keyLower.Contains("fee") || keyLower.Contains("rate");
+
+                            if (!isFinancial)
+                            {
+                                <div class="col-md-6">
+                                    <label class="form-label">@Model[i].Key</label>
+                                    <input type="hidden" name="settings[@i].Key" value="@Model[i].Key" />
+
+                                    <!-- Smart Dropdown for Status Flags -->
+                                    @if (keyLower.Contains("mode") || keyLower.Contains("status"))
+                                    {
+                                        <select name="settings[@i].Value" class="form-select settings-input shadow-sm rounded-3" required>
+                                            <option value="ON" @(Model[i].Value.ToUpper() == "ON" ? "selected" : "")>ON (Enabled)</option>
+                                            <option value="OFF" @(Model[i].Value.ToUpper() == "OFF" ? "selected" : "")>OFF (Disabled)</option>
+                                        </select>
+                                        <div class="helper-text"><i class="bi bi-flag me-1"></i>Prevents customers from placing orders if ON.</div>
+                                    }
+                                    else
+                                    {
+                                        <input type="text" name="settings[@i].Value" value="@Model[i].Value" class="form-control settings-input shadow-sm rounded-3" required />
+                                        <div class="helper-text"><i class="bi bi-flag me-1"></i>Global system parameter.</div>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+
+                    <!-- Footer Action -->
+                    <div class="mt-5 text-center pt-4 border-top">
+                        <div class="d-inline-flex align-items-center bg-light text-muted small rounded-pill px-4 py-2 mb-4 border border-warning border-opacity-25">
+                            <i class="bi bi-exclamation-triangle-fill text-warning me-2 fs-6"></i>
+                            Modifying these values will immediately alter live calculations and user experiences.
+                        </div>
+                        <br />
+                        <button type="submit" class="btn btn-save">
+                            <i class="bi bi-shield-lock-fill me-2"></i> Commit System Changes
+                        </button>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-database-x display-4 text-secondary opacity-50 mb-3 d-block"></i>
+                    <h5 class="fw-bold text-dark">No Configurations Found</h5>
+                    <p class="text-muted small">The database currently contains no global system variables to edit.</p>
+                </div>
+            }
+        </div>
+
+        <div class="text-center mt-4">
+            <span class="badge bg-white text-muted border shadow-sm px-3 py-2 rounded-pill">
+                <i class="bi bi-person-badge-fill me-1 text-primary"></i> Logged in as: <strong>@User.Identity.Name</strong>
+            </span>
+            <div class="text-muted small mt-2 opacity-75">Security Audit Logging Enabled (Task 41)</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

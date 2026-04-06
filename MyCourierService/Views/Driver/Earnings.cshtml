@@ -1,0 +1,313 @@
+﻿@model IEnumerable<MyCourierSA.Models.WalletTransaction>
+
+@{
+    ViewBag.Title = "Earnings Report";
+    Layout = null;
+
+    // Pull data from the updated Controller ViewBag
+    decimal currentBalance = ViewBag.CurrentBalance ?? 0.00m;
+    decimal monthlyEarnings = ViewBag.MonthlyEarnings ?? 0.00m;
+    decimal todayEarnings = ViewBag.TodayEarnings ?? 0.00m;
+    int taskCount = ViewBag.MonthlyTaskCount ?? 0;
+
+    decimal pickupRate = ViewBag.PickupRate ?? 30.00m;
+    decimal deliveryRate = ViewBag.DeliveryRate ?? 40.00m;
+
+    // Progress towards a monthly goal (e.g., 60 tasks/month)
+    int monthlyGoal = 60;
+    int progressPercent = (taskCount * 100) / monthlyGoal;
+    if (progressPercent > 100) { progressPercent = 100; }
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title - MyCourierSA</title>
+
+    <!-- Premium Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #6a11cb;
+            --secondary: #2575fc;
+            --success: #10b981;
+            --dark: #1e293b;
+            --light-bg: #f8fafc;
+        }
+
+        body {
+            background-color: var(--light-bg);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--dark);
+        }
+
+        .web-navbar {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1rem 0;
+        }
+
+        .btn-back {
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+            .btn-back:hover {
+                background: #f1f5f9;
+            }
+
+        /* Summary Cards */
+        .finance-card {
+            padding: 2rem;
+            border-radius: 24px;
+            position: relative;
+            overflow: hidden;
+            border: none;
+            transition: transform 0.3s ease;
+        }
+
+        .main-payout {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+        }
+
+        .amount-hero {
+            font-weight: 800;
+            font-size: 2.8rem;
+            letter-spacing: -1.5px;
+        }
+
+        .card-bg-icon {
+            position: absolute;
+            right: -10px;
+            bottom: -10px;
+            font-size: 6rem;
+            opacity: 0.15;
+            transform: rotate(-15deg);
+        }
+
+        /* Stats Cards */
+        .stat-box {
+            background: white;
+            border-radius: 20px;
+            padding: 1.5rem;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .progress-bar-custom {
+            height: 10px;
+            border-radius: 10px;
+            background: #e2e8f0;
+            overflow: hidden;
+        }
+
+        /* Table Area */
+        .table-container {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .search-input {
+            background: #f1f5f9;
+            border: none;
+            padding: 0.7rem 1.5rem 0.7rem 3rem;
+            border-radius: 50rem;
+            font-weight: 500;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1.2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        .type-pill {
+            font-size: 0.7rem;
+            font-weight: 800;
+            padding: 0.4rem 0.8rem;
+            border-radius: 50rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .pill-earning {
+            background: #ecfdf5;
+            color: #059669;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar web-navbar sticky-top shadow-sm mb-4">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a href="@Url.Action("Index", "Driver")" class="btn btn-back">
+                <i class="fas fa-chevron-left me-2"></i> Dashboard
+            </a>
+            <div class="navbar-brand fw-bold fs-4 m-0">
+                <i class="fas fa-wallet text-primary me-2"></i> Personnel<span class="text-primary">Wallet</span>
+            </div>
+            @using (Html.BeginForm("LogOff", "Account", FormMethod.Post, new { id = "logoutForm", @class = "m-0" }))
+            {
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn border-0 text-danger fw-bold">
+                    Logout <i class="fas fa-power-off ms-2"></i>
+                </button>
+            }
+        </div>
+    </nav>
+
+    <div class="container pb-5">
+
+        <!-- HEADER -->
+        <div class="row align-items-end mb-4">
+            <div class="col-md-6">
+                <h2 class="fw-800 text-dark mb-1">Earnings Center</h2>
+                <p class="text-muted mb-0"><i class="far fa-calendar-check me-2"></i> Cycle: <strong>@DateTime.Now.ToString("MMMM yyyy")</strong></p>
+            </div>
+            <div class="col-md-6 text-md-end mt-3">
+                <div class="d-inline-flex gap-2">
+                    <button onclick="window.print()" class="btn btn-light fw-bold rounded-pill px-4 shadow-sm border">
+                        <i class="fas fa-print me-2 text-primary"></i> Print
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SUMMARY ROW -->
+        <div class="row g-4 mb-5">
+            <div class="col-lg-5">
+                <div class="finance-card main-payout shadow-lg h-100">
+                    <span class="label small fw-bold text-uppercase opacity-75">Available Wallet Balance</span>
+                    <h1 class="amount-hero my-2">R @currentBalance.ToString("N2")</h1>
+                    <div class="d-flex align-items-center gap-3 mt-3">
+                        <div class="bg-white bg-opacity-20 px-3 py-1 rounded-pill small fw-bold">
+                            Today: +R @todayEarnings.ToString("N2")
+                        </div>
+                    </div>
+                    <div class="card-bg-icon"><i class="fas fa-vault"></i></div>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="row g-3 h-100">
+                    <div class="col-md-6">
+                        <div class="stat-box h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <p class="text-muted small fw-bold text-uppercase mb-3">Monthly Activity</p>
+                                <h4 class="fw-bold mb-1">@taskCount Tasks Completed</h4>
+                                <div class="text-muted smaller mb-3">Target: @monthlyGoal (Pickup/Delivery combined)</div>
+                            </div>
+                            <div>
+                                <div class="progress-bar-custom mb-2">
+                                    <div class="bg-primary h-100" style="width: @progressPercent%"></div>
+                                </div>
+                                <div class="text-end fw-bold text-primary smaller">@progressPercent% to Bonus</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="stat-box h-100">
+                            <p class="text-muted small fw-bold text-uppercase mb-3">My Rates</p>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted small">Pickup Leg:</span>
+                                <span class="text-dark fw-bold">@pickupRate.ToString("0")%</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted small">Delivery Leg:</span>
+                                <span class="text-dark fw-bold">@deliveryRate.ToString("0")%</span>
+                            </div>
+                            <hr class="my-2 opacity-50">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted small">Total Potential:</span>
+                                <span class="text-success fw-bold">@(pickupRate + deliveryRate)%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TRANSACTION TABLE -->
+        <div class="table-container p-0 overflow-hidden">
+            <div class="p-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+                <h5 class="fw-800 text-dark mb-0">Transaction Log</h5>
+                <div class="position-relative" style="width: 320px;">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="tableSearch" class="form-control search-input" placeholder="Search tracking or note...">
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="earningsTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4 text-uppercase smaller fw-bold text-muted">Transaction ID</th>
+                            <th class="text-uppercase smaller fw-bold text-muted">Date & Time</th>
+                            <th class="text-uppercase smaller fw-bold text-muted">Description</th>
+                            <th class="text-uppercase smaller fw-bold text-muted">Action Type</th>
+                            <th class="pe-4 text-end text-uppercase smaller fw-bold text-muted">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center py-5">
+                                    <i class="fas fa-receipt fa-3x text-light mb-3"></i>
+                                    <p class="text-muted">No earnings recorded for this cycle yet.</p>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var item in Model)
+                            {
+                    <tr>
+                        <td class="ps-4 fw-bold text-muted">#@item.Id.ToString().PadLeft(6, '0')</td>
+                        <td class="smaller text-muted">@item.Timestamp.ToString("dd MMM, HH:mm")</td>
+                        <td>
+                        <td>
+                            <div class="fw-bold text-dark">@item.Description</div>
+                        </td>
+                        
+                        <td>
+                            <span class="type-pill pill-earning">Earning</span>
+                        </td>
+                        <td class="pe-4 text-end fw-800 text-success">
+                            + R @item.Amount.ToString("N2")
+                        </td>
+                    </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $("#tableSearch").on("keyup", function () {
+                var value = $(this).val().toLowerCase();
+                $("#earningsTable tbody tr").filter(function () {
+                    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,45 @@
+﻿@{
+    ViewBag.Title = "Confirm Email";
+}
+
+<main class="account-page">
+    <div class="account-container d-flex justify-content-center align-items-center vh-100">
+        <div class="account-card p-5 shadow-lg rounded text-center">
+            <h2 class="mb-4">Email Confirmed!</h2>
+            <p class="mb-4">Thank you for confirming your email.</p>
+            <p>
+                @Html.ActionLink("Click here to Log in", "Login", "Account", null, new { @class = "btn btn-primary btn-lg" })
+            </p>
+        </div>
+    </div>
+</main>
+
+@section Styles {
+    <style>
+        .account-page {
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            min-height: 100vh;
+        }
+
+        .account-container {
+            padding: 1rem;
+        }
+
+        .account-card {
+            background: #ffffffcc;
+            border-radius: 15px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .btn-primary {
+            border-radius: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+            .btn-primary:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            }
+    </style>
+}/main>

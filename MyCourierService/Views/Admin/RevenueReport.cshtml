@@ -1,0 +1,299 @@
+﻿@model IEnumerable<MyCourierSA.Models.MonthlyRevenueData>
+@{
+    Layout = null; // Standalone Premium View
+    ViewBag.Title = "Financial Intelligence Report";
+
+    // Prepare data for Chart.js
+    var monthlyRevenue = new decimal[12];
+    var monthlyProfit = new decimal[12];
+
+    foreach (var item in Model)
+    {
+        if (item.Month > 0 && item.Month <= 12)
+        {
+            monthlyRevenue[item.Month - 1] = item.Total;
+            // Estimated Profit (Assuming 30% company keep, 70% driver payout)
+            monthlyProfit[item.Month - 1] = item.Total * 0.30m;
+        }
+    }
+
+    decimal totalRevenue = Model.Sum(m => m.Total);
+    decimal totalEstimatedProfit = totalRevenue * 0.30m;
+    int currentYear = DateTime.UtcNow.Year;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Financial Intel - MyCourierSA</title>
+
+    <!-- Google Fonts & Bootstrap -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css" />
+
+    <style>
+        :root {
+            --primary: #4361ee;
+            --success: #06d6a0;
+            --info: #4cc9f0;
+            --dark: #0f172a;
+        }
+
+        body {
+            background: #f8fafc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--dark);
+        }
+
+        .main-overlay {
+            background: linear-gradient(135deg, rgba(245, 247, 250, 0.98) 0%, rgba(230, 235, 245, 0.98) 100%);
+            min-height: 100vh;
+            padding-bottom: 5rem;
+        }
+
+        .glass-card {
+            background: white;
+            border-radius: 24px;
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 0;
+        }
+
+        /* KPI Card Styling */
+        .kpi-card {
+            padding: 1.5rem;
+            border-radius: 20px;
+            background: white;
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+        }
+
+            .kpi-card:hover {
+                transform: translateY(-5px);
+            }
+
+        .kpi-label {
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #64748b;
+            letter-spacing: 1px;
+        }
+
+        .kpi-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-top: 0.5rem;
+        }
+
+        /* Table & Typography */
+        .fw-800 {
+            font-weight: 800;
+        }
+
+        .table thead th {
+            background: #f8fafc;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 1rem;
+            border: none;
+        }
+
+        .table tbody td {
+            padding: 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+
+        .chart-container {
+            height: 400px;
+            position: relative;
+        }
+
+        @@media print {
+            .btn, .top-nav {
+                display: none !important;
+            }
+
+            .glass-card {
+                border: 1px solid #eee;
+                box-shadow: none;
+            }
+
+            body {
+                background: white;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-overlay">
+        <div class="container">
+
+            <!-- TOP NAV -->
+            <nav class="top-nav">
+                <a href="@Url.Action("Index", "Admin")" class="btn btn-light rounded-pill px-4 fw-bold border shadow-sm">
+                    <i class="bi bi-arrow-left me-2 text-primary"></i> HQ COMMAND
+                </a>
+                <div class="d-flex gap-2">
+                    <button onclick="window.print()" class="btn btn-dark rounded-pill px-4 fw-bold shadow-sm">
+                        <i class="bi bi-printer me-2"></i> GENERATE PDF
+                    </button>
+                </div>
+            </nav>
+
+            <!-- PAGE HEADER -->
+            <header class="mb-5">
+                <h1 class="fw-800 mb-1">Financial Intelligence <span class="text-primary">@currentYear</span></h1>
+                <p class="text-muted">Consolidated revenue analytics and profit projections for MyCourierSA operations.</p>
+            </header>
+
+            <!-- KPI SUMMARY -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-4">
+                    <div class="kpi-card border-start border-4 border-primary">
+                        <div class="kpi-label">Gross Annual Revenue</div>
+                        <div class="kpi-value text-primary">R @totalRevenue.ToString("N2")</div>
+                        <div class="small text-muted mt-2"><i class="bi bi-graph-up"></i> Total volume processed</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="kpi-card border-start border-4 border-success">
+                        <div class="kpi-label">Est. Net Profit (30%)</div>
+                        <div class="kpi-value text-success">R @totalEstimatedProfit.ToString("N2")</div>
+                        <div class="small text-muted mt-2"><i class="bi bi-pie-chart"></i> After driver commissions</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="kpi-card border-start border-4 border-info">
+                        <div class="kpi-label">Avg. Monthly Income</div>
+                        <div class="kpi-value text-info">R @(Model.Any() ? Model.Average(m => m.Total).ToString("N2") : "0.00")</div>
+                        <div class="small text-muted mt-2"><i class="bi bi-calendar-check"></i> Standard cycle average</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VISUALIZATION -->
+            <div class="glass-card mb-5">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-800 mb-0">Revenue Growth Curve</h5>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3">Live Data</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+
+            <!-- RAW DATA TABLE -->
+            <div class="glass-card">
+                <h5 class="fw-800 mb-4">Detailed Monthly Breakdown</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Month Reference</th>
+                                <th class="text-end">Gross Revenue</th>
+                                <th class="text-end">Driver Payouts (Est. 70%)</th>
+                                <th class="text-end">Company Profit (Est. 30%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.OrderBy(m => m.Month))
+                            {
+                                <tr>
+                                    <td class="fw-bold text-dark">
+                                        <i class="bi bi-calendar3 me-2 text-primary"></i>
+                                        @System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(item.Month)
+                                    </td>
+                                    <td class="text-end fw-bold">R @item.Total.ToString("N2")</td>
+                                    <td class="text-end text-danger">- R @((item.Total * 0.70m).ToString("N2"))</td>
+                                    <td class="text-end text-success fw-bold">+ R @((item.Total * 0.30m).ToString("N2"))</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <footer class="text-center mt-5 text-muted small">
+                Security Clearance Level: Administrator | Report Timestamp: @DateTime.Now.ToString("F")
+            </footer>
+
+        </div>
+    </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+
+        // Create Gradient
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(67, 97, 238, 0.4)');
+        gradient.addColorStop(1, 'rgba(67, 97, 238, 0)');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                datasets: [
+                    {
+                        label: 'Gross Revenue (R)',
+                        data: [@string.Join(",", monthlyRevenue.Select(x => x.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)))],
+                        borderColor: '#4361ee',
+                        backgroundColor: gradient,
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#4361ee',
+                        pointHoverRadius: 6
+                    },
+                    {
+                        label: 'Estimated Profit (R)',
+                        data: [@string.Join(",", monthlyProfit.Select(x => x.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)))],
+                        borderColor: '#06d6a0',
+                        borderDash: [5, 5],
+                        tension: 0.4,
+                        borderWidth: 2,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, font: { family: 'Plus Jakarta Sans', weight: 'bold' } } }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: value => 'R ' + value.toLocaleString()
+                        },
+                        grid: { color: 'rgba(0,0,0,0.03)' }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    });
+    </script>
+
+</body>
+</html>

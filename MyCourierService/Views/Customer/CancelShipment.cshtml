@@ -1,0 +1,168 @@
+﻿@model MyCourierSA.Models.Shipment
+@{
+    Layout = null;
+    ViewBag.Title = "Cancel Shipment";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewBag.Title - MyCourier</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, rgba(15, 30, 50, 0.9) 0%, rgba(10, 15, 25, 0.95) 100%), url('/Content/Images/courier-bg.jpg');
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .cancel-card {
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(15px);
+            border-radius: 1.25rem;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 550px;
+            width: 100%;
+        }
+
+        .receipt-box {
+            background-color: #f8f9fa;
+            border: 1px dashed #dee2e6;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .receipt-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 0.75rem;
+            margin-bottom: 0.75rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+            .receipt-row:last-child {
+                border-bottom: none;
+                padding-bottom: 0;
+                margin-bottom: 0;
+            }
+
+        .icon-pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @@keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="cancel-card text-center shadow-lg">
+
+        @if (Model == null)
+        {
+            <div class="py-4">
+                <i class="bi bi-exclamation-triangle-fill text-warning fs-1 d-block mb-3"></i>
+                <h3 class="fw-bold">Shipment Not Found</h3>
+                <p class="text-muted">We couldn't locate the shipment record.</p>
+                <a href="@Url.Action("Index", "Customer")" class="btn btn-primary mt-3 px-4 rounded-pill">Dashboard</a>
+            </div>
+        }
+        else
+        {
+            <div class="mb-4">
+                <i class="bi bi-exclamation-octagon-fill text-danger fs-1 d-block mb-2 icon-pulse"></i>
+                <h2 class="fw-bold text-dark mb-1">Confirm Cancellation</h2>
+                <p class="text-muted">Are you sure you want to void this waybill?</p>
+            </div>
+
+            <!-- Alignment: Receipt Area showing City/Province for context -->
+            <div class="receipt-box text-start">
+                <div class="receipt-row">
+                    <span class="text-muted fw-semibold small text-uppercase">Tracking ID</span>
+                    <span class="fw-bold font-monospace text-primary">@Model.TrackingNumber</span>
+                </div>
+                <div class="receipt-row">
+                    <span class="text-muted fw-semibold small text-uppercase">Route Area</span>
+                    <span class="fw-bold text-dark">@Model.ReceiverCity, @Model.ReceiverProvince</span>
+                </div>
+                <div class="receipt-row mt-2 pt-2 border-top-0">
+                    <div class="w-100 bg-success bg-opacity-10 p-3 rounded-3 d-flex justify-content-between align-items-center">
+                        <span class="text-success fw-bold text-uppercase small">Wallet Refund</span>
+                        <span class="fw-bolder text-success fs-4">R @Model.Price.ToString("F2")</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-danger text-start d-flex align-items-center mb-4 border-0 shadow-sm rounded-3 py-3" role="alert">
+                <i class="bi bi-info-circle-fill fs-4 me-3 text-danger"></i>
+                <div class="small">
+                    <strong>Important:</strong> Your parcel will be removed from the pickup queue. The <strong>R@Model.Price.ToString("F2")</strong> credit will be added back to your balance immediately.
+                </div>
+            </div>
+
+            @* Form points to the [HttpPost] action in CustomerController *@
+            using (Html.BeginForm("CancelShipment", "Customer", new { id = Model.Id }, FormMethod.Post, new { id = "cancelForm" }))
+            {
+                @Html.AntiForgeryToken()
+
+                <div class="form-check text-start mb-4 bg-light p-3 rounded border mx-1">
+                    <input class="form-check-input ms-1" type="checkbox" id="confirmCheckbox" required>
+                    <label class="form-check-label ms-2 fw-semibold text-dark user-select-none" for="confirmCheckbox">
+                        I confirm that I want to cancel this shipment.
+                    </label>
+                </div>
+
+                <div class="d-flex flex-column flex-sm-row gap-2">
+                    <a href="@Url.Action("Index", "Customer")" class="btn btn-light border fw-bold w-100 py-2 rounded-pill shadow-sm">
+                        <i class="bi bi-arrow-left me-1"></i> Don't Cancel
+                    </a>
+                    <button type="submit" id="cancelBtn" class="btn btn-danger fw-bold w-100 py-2 rounded-pill shadow-sm" disabled>
+                        <i class="bi bi-x-circle me-1"></i> Confirm & Refund
+                    </button>
+                </div>
+            }
+        }
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const checkbox = document.getElementById("confirmCheckbox");
+            const cancelBtn = document.getElementById("cancelBtn");
+            if (checkbox && cancelBtn) {
+                checkbox.addEventListener("change", function () {
+                    cancelBtn.disabled = !this.checked;
+                });
+            }
+        });
+    </script>
+</body>
+</html>

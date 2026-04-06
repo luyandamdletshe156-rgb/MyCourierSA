@@ -1,0 +1,319 @@
+﻿@model MyCourierSA.Models.Shipment
+@{
+    Layout = null; // Standalone document
+    ViewBag.Title = "Print Label - " + Model.TrackingNumber;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+    <style>
+        /* ========================================== */
+        /* 1. ON-SCREEN PREVIEW STYLES (Command Center) */
+        /* ========================================== */
+        body {
+            background: linear-gradient(135deg, rgba(10, 15, 30, 0.85) 0%, rgba(10, 15, 30, 0.95) 100%), url('/Content/Images/courier-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 3rem 1rem;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .workspace-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .toolbar {
+            width: 100%;
+            max-width: 4in; /* Matches label width */
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        /* ========================================== */
+        /* 2. THE PHYSICAL LABEL (Industry Standard 4x6) */
+        /* ========================================== */
+        .shipping-label {
+            width: 4in; /* Standard thermal label width */
+            height: 6in; /* Standard thermal label height */
+            background-color: white;
+            color: black;
+            padding: 0.2in;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            border-radius: 8px; /* Slight rounding for screen */
+            overflow: hidden;
+            position: relative;
+        }
+
+        .label-header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 3px solid #000;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+
+        .brand-name {
+            font-size: 1.4rem;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            line-height: 1;
+        }
+
+        .service-type {
+            font-size: 1.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .routing-zone {
+            background-color: #000;
+            color: #fff;
+            text-align: center;
+            padding: 10px 5px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        .routing-bin {
+            font-size: 3rem;
+            font-weight: 900;
+            line-height: 1;
+            font-family: monospace;
+        }
+
+        .routing-city {
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .address-zone {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            gap: 10px;
+        }
+
+        .address-block {
+            border: 2px solid #000;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .address-title {
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            border-bottom: 1px solid #000;
+            margin-bottom: 4px;
+        }
+
+        .address-to {
+            border-width: 4px; /* Thicker border for destination */
+        }
+
+        .to-name {
+            font-size: 1.4rem;
+            font-weight: 800;
+            line-height: 1.1;
+        }
+
+        .meta-zone {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-top: 2px dashed #000;
+            padding-top: 5px;
+            margin-top: 5px;
+        }
+
+        .barcode-zone {
+            text-align: center;
+            margin-top: auto;
+            border-top: 3px solid #000;
+            padding-top: 10px;
+        }
+
+        .barcode-text {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+        }
+
+        .fragile-banner {
+            background: #000;
+            color: #fff;
+            text-align: center;
+            font-weight: 900;
+            font-size: 1.2rem;
+            padding: 4px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        /* ========================================== */
+        /* 3. STRICT PRINT RULES                      */
+        /* ========================================== */
+        @@media print {
+            @@page {
+                size: 4in 6in; /* Forces printer into 4x6 label mode */
+                margin: 0; /* Removes default browser margins/headers */
+            }
+
+            body {
+                background: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                display: block;
+            }
+
+            .d-print-none {
+                display: none !important;
+            }
+
+            .workspace-panel {
+                background: none;
+                backdrop-filter: none;
+                border: none;
+                padding: 0;
+                box-shadow: none;
+                border-radius: 0;
+            }
+
+            .shipping-label {
+                border-radius: 0; /* Remove rounding for paper */
+                width: 4in;
+                height: 6in;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="workspace-panel">
+
+        <!-- ACTION TOOLBAR (Hidden when printing) -->
+        <div class="toolbar d-print-none">
+            <a href="javascript:history.back()" class="btn btn-light rounded-pill fw-bold shadow-sm">
+                <i class="bi bi-arrow-left me-1"></i> Back
+            </a>
+            <button onclick="window.print()" class="btn btn-primary rounded-pill fw-bold shadow-sm px-4">
+                <i class="bi bi-printer-fill me-2"></i> Print Label
+            </button>
+        </div>
+
+        <!-- THE PHYSICAL LABEL (4x6 Inches) -->
+        <div class="shipping-label">
+
+            <!-- HEADER -->
+            <div class="label-header">
+                <div>
+                    <div class="brand-name">MyCourier SA</div>
+                    <div style="font-size: 0.75rem; font-weight: 600;">Standard Shipping Label</div>
+                </div>
+                <div class="service-type">@Model.DeliveryOption</div>
+            </div>
+
+            <!-- ROUTING ZONE (Massive text for warehouse workers) -->
+            <div class="routing-zone">
+                <div class="routing-city">@Model.ReceiverCity.ToUpper()</div>
+                <div class="routing-bin">@(Model.SortingBin ?? "UNSORTED")</div>
+            </div>
+
+            <!-- CONDITIONAL FRAGILE BANNER -->
+            @if (Model.IsFragile)
+            {
+                <div class="fragile-banner">
+                    ⚠ FRAGILE - HANDLE WITH CARE ⚠
+                </div>
+            }
+
+            <div class="address-zone">
+                <!-- FROM BLOCK -->
+                <div class="address-block">
+                    <div class="address-title">Ship From:</div>
+                    <div style="font-size: 0.9rem; font-weight: 700;">@Model.SenderName</div>
+                    <div style="font-size: 0.85rem;">
+                        @Model.SenderAddress<br />
+                        @Model.SenderCity, @Model.SenderProvince<br />
+                        Tel: @Model.SenderPhone
+                    </div>
+                </div>
+
+                <!-- TO BLOCK -->
+                <div class="address-block address-to">
+                    <div class="address-title">Deliver To:</div>
+                    <div class="to-name">@Model.ReceiverName</div>
+                    <div style="font-size: 1.1rem; font-weight: 600; line-height: 1.3;">
+                        @Model.ReceiverAddress<br />
+                        @Model.ReceiverCity, @Model.ReceiverProvince<br />
+                        <span style="font-size: 0.9rem;">Tel: @Model.ReceiverPhone</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- METADATA -->
+            <div class="meta-zone">
+                <div>Date: @Model.CreatedDate.ToString("dd MMM yyyy")</div>
+                <div>Weight: @Model.ParcelWeight kg</div>
+                <div>Type: @Model.ParcelType</div>
+            </div>
+
+            <!-- BARCODE FOOTER -->
+            <div class="barcode-zone">
+                <svg id="barcode" style="width: 100%; height: 75px;"></svg>
+                <div class="barcode-text">@Model.TrackingNumber</div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Barcode Generation Script -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            try {
+                JsBarcode("#barcode", "@Model.TrackingNumber", {
+                    format: "CODE128",
+                    lineColor: "#000",
+                    width: 2.5,
+                    height: 60,
+                    displayValue: false,
+                    margin: 0
+                });
+            } catch (e) {
+                console.error("Barcode generation failed.", e);
+            }
+        });
+    </script>
+</body>
+</html>

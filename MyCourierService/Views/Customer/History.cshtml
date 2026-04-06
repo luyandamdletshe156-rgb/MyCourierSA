@@ -1,0 +1,213 @@
+﻿@model IEnumerable<MyCourierSA.Models.Shipment>
+@{
+    Layout = null;
+    ViewBag.Title = "Shipment History";
+
+    // Safe model handling
+    var shipments = Model != null ? Model.OrderByDescending(s => s.CreatedDate).ToList() : new List<MyCourierSA.Models.Shipment>();
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewBag.Title - MyCourier Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+    <style>
+        body {
+            background: linear-gradient(135deg, rgba(15, 30, 50, 0.85) 0%, rgba(10, 15, 25, 0.95) 100%), url('/Content/Images/courier-bg.jpg');
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+            min-height: 100vh;
+            color: #333;
+            padding: 40px 20px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .history-card {
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(10px);
+            border-radius: 1.25rem;
+            padding: 2rem;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .table-custom thead th {
+            background-color: #f8f9fa;
+            color: #495057;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #dee2e6;
+            padding: 1rem;
+        }
+
+        .table-custom tbody tr {
+            transition: 0.2s;
+            border-bottom: 1px solid #f1f1f1;
+        }
+
+            .table-custom tbody tr:hover {
+                background-color: #f8f9fa;
+                transform: translateY(-1px);
+            }
+
+        .badge-custom {
+            padding: 0.5em 0.8em;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .search-container {
+            max-width: 400px;
+        }
+
+        .no-results-row {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="history-card">
+
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 border-bottom pb-3">
+                <div>
+                    <h2 class="mb-0 fw-bold text-dark"><i class="bi bi-clock-history text-primary me-2"></i> Shipment History</h2>
+                    <p class="text-muted small mb-0">Track and manage all your past and current bookings.</p>
+                </div>
+                <div class="d-flex gap-2 mt-3 mt-md-0">
+                    <a href="@Url.Action("CreateShipment", "Customer")" class="btn btn-primary shadow-sm rounded-pill px-4 fw-bold">
+                        <i class="bi bi-plus-lg me-1"></i> New Booking
+                    </a>
+                    <a href="@Url.Action("Index", "Customer")" class="btn btn-outline-dark rounded-pill px-4">
+                        <i class="bi bi-arrow-left"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+
+            @if (!shipments.Any())
+            {
+                <div class="text-center py-5 bg-light rounded-3 border border-dashed">
+                    <i class="bi bi-inbox fs-1 text-muted d-block mb-3"></i>
+                    <h4 class="fw-bold">No Records Found</h4>
+                    <p class="text-muted">You haven't made any bookings yet.</p>
+                    <a href="@Url.Action("CreateShipment", "Customer")" class="btn btn-primary px-4 rounded-pill">Start Sending</a>
+                </div>
+            }
+            else
+            {
+                <!-- Live Search Bar -->
+                <div class="d-flex justify-content-end mb-3">
+                    <div class="input-group search-container shadow-sm">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Filter by Tracking #, Name, City...">
+                    </div>
+                </div>
+
+                <!-- Data Table -->
+                <div class="table-responsive rounded-3 border">
+                    <table class="table table-custom table-hover align-middle mb-0" id="historyTable">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Tracking #</th>
+                                <th>Booking Date</th>
+                                <th>Recipient & Route</th>
+                                <th>Current Status</th>
+                                <th>Total Cost</th>
+                                <th class="text-end pe-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in shipments)
+                            {
+                                // ALIGNED STATUS COLORS
+                                string badgeClass = s.Status == "Pending" ? "bg-warning text-dark border" :
+                                                    s.Status == "Approved" ? "bg-info text-dark" :
+                                                    s.Status == "Collected" || s.Status == "Assigned for Collection" ? "bg-primary text-white" :
+                                                    s.Status == "At Warehouse" ? "bg-success text-white" :
+                                                    s.Status == "In Transit" || s.Status == "Assigned for Delivery" ? "bg-primary text-white" :
+                                                    s.Status == "Delivered" ? "bg-dark text-white" :
+                                                    s.Status == "Cancelled" ? "bg-danger text-white" : "bg-secondary text-white";
+
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold font-monospace text-primary">@s.TrackingNumber</div>
+                                        <small class="text-muted">ID: #@s.Id</small>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">@s.CreatedDate.ToString("dd MMM yyyy")</div>
+                                        <div class="small text-muted">@s.CreatedDate.ToString("HH:mm")</div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold text-dark">@s.ReceiverName</div>
+                                        <!-- ALIGNMENT: Show City/Province for Warehouse Context -->
+                                        <div class="text-muted small text-truncate" style="max-width: 250px;">
+                                            <i class="bi bi-geo-alt text-danger me-1"></i>
+                                            @s.ReceiverCity, @s.ReceiverProvince
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-custom @badgeClass shadow-sm">@s.Status</span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold text-success">R @s.Price.ToString("F2")</span>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <a href="@Url.Action("Details", "Customer", new { id = s.Id })" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                                            <i class="bi bi-geo-alt me-1"></i> Track
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                            <!-- No Results row for JS search -->
+                            <tr class="no-results-row">
+                                <td colspan="6" class="text-center py-5 text-muted fst-italic">
+                                    No shipments match your search criteria.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const searchInput = document.getElementById("searchInput");
+            const noResults = document.querySelector(".no-results-row");
+
+            if (searchInput) {
+                searchInput.addEventListener("keyup", function () {
+                    const filter = this.value.toLowerCase();
+                    const rows = document.querySelectorAll("#historyTable tbody tr:not(.no-results-row)");
+                    let hasMatch = false;
+
+                    rows.forEach(row => {
+                        const text = row.textContent.toLowerCase();
+                        if (text.includes(filter)) {
+                            row.style.display = "";
+                            hasMatch = true;
+                        } else {
+                            row.style.display = "none";
+                        }
+                    });
+
+                    noResults.style.display = hasMatch ? "none" : "table-row";
+                });
+            }
+        });
+    </script>
+</body>
+</html>

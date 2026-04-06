@@ -1,0 +1,322 @@
+﻿@model MyCourierSA.Models.Shipment
+@using MyCourierSA.Constants
+@{
+    Layout = null; // Standalone Premium View
+    ViewBag.Title = "Package Dossier - " + Model.TrackingNumber;
+
+    // Financial Analysis
+    // Note: Reflecting the split model (30% Pickup, 40% Delivery, 30% Company)
+    decimal pickupComm = Model.Price * 0.30m;
+    decimal deliveryComm = Model.Price * 0.40m;
+    decimal totalDriverPay = pickupComm + deliveryComm;
+    decimal netProfit = Model.Price - totalDriverPay;
+
+    var drivers = ViewBag.Drivers as IEnumerable<MyCourierSA.Models.ApplicationUser> ?? new List<MyCourierSA.Models.ApplicationUser>();
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewBag.Title - MyCourier HQ</title>
+
+    <!-- Google Fonts & Bootstrap -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css" />
+
+    <style>
+        :root {
+            --primary: #4361ee;
+            --success: #06d6a0;
+            --warning: #ffd166;
+            --danger: #ef476f;
+            --dark: #0f172a;
+        }
+
+        body {
+            background: #f8fafc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--dark);
+        }
+
+        .main-overlay {
+            background: linear-gradient(135deg, rgba(245, 247, 250, 0.98) 0%, rgba(230, 235, 245, 0.98) 100%);
+            min-height: 100vh;
+            padding-bottom: 5rem;
+        }
+
+        .glass-card {
+            background: white;
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+            margin-bottom: 1.5rem;
+        }
+
+        .info-label {
+            font-size: 0.65rem;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 1rem;
+            color: #1e293b;
+            font-weight: 700;
+        }
+
+        /* Timeline Styling */
+        .history-list {
+            list-style: none;
+            padding: 0;
+            margin-left: 10px;
+            border-left: 2px dashed #e2e8f0;
+        }
+
+        .history-item {
+            position: relative;
+            padding-left: 25px;
+            margin-bottom: 1.5rem;
+        }
+
+            .history-item::before {
+                content: "";
+                position: absolute;
+                left: -7px;
+                top: 4px;
+                width: 12px;
+                height: 12px;
+                background: var(--primary);
+                border-radius: 50%;
+                border: 2px solid #fff;
+                box-shadow: 0 0 0 2px var(--primary);
+            }
+
+        .btn-premium {
+            border-radius: 50rem;
+            padding: 0.75rem 1.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        .pod-preview {
+            max-width: 100%;
+            border-radius: 15px;
+            border: 1px solid #e2e8f0;
+            cursor: zoom-in;
+            transition: 0.3s;
+        }
+
+            .pod-preview:hover {
+                transform: scale(1.02);
+            }
+
+        @@media print {
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-overlay">
+        <div class="container py-2">
+
+            <!-- NAVIGATION -->
+            <nav class="d-flex justify-content-between align-items-center mb-5 no-print py-4">
+                <a href="@Url.Action("Index", "Admin")" class="btn btn-light rounded-pill px-4 fw-bold border shadow-sm">
+                    <i class="bi bi-arrow-left me-2 text-primary"></i> HQ COMMAND
+                </a>
+                <h3 class="fw-800 text-dark mb-0">Operational <span class="text-primary">Dossier</span></h3>
+                <button onclick="window.print()" class="btn btn-dark rounded-pill px-4 fw-bold shadow-sm">
+                    <i class="bi bi-printer me-2"></i> ARCHIVE PDF
+                </button>
+            </nav>
+
+            <div class="row g-4">
+                <!-- MAIN DOSSIER CONTENT -->
+                <div class="col-lg-8">
+
+                    <!-- FINANCIAL ANALYSIS -->
+                    <div class="glass-card border-top border-4 border-primary">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="fw-800 mb-0">Financial Breakdown</h5>
+                            <span class="badge bg-primary rounded-pill px-3 py-2 font-monospace">@Model.TrackingNumber</span>
+                        </div>
+                        <div class="row g-3 text-center">
+                            <div class="col-md-3">
+                                <div class="p-3 rounded-4 bg-light border">
+                                    <div class="info-label">Gross Revenue</div>
+                                    <div class="h4 fw-800 text-dark mb-0">R @Model.Price.ToString("N2")</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="p-3 rounded-4 bg-info bg-opacity-10 border border-info border-opacity-20">
+                                    <div class="info-label text-info">Pickup (30%)</div>
+                                    <div class="h4 fw-800 text-info mb-0">R @pickupComm.ToString("N2")</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="p-3 rounded-4 bg-primary bg-opacity-10 border border-primary border-opacity-20">
+                                    <div class="info-label text-primary">Delivery (40%)</div>
+                                    <div class="h4 fw-800 text-primary mb-0">R @deliveryComm.ToString("N2")</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="p-3 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-20">
+                                    <div class="info-label text-success">Net Profit (30%)</div>
+                                    <div class="h4 fw-800 text-success mb-0">R @netProfit.ToString("N2")</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LOGISTICS CONTEXT -->
+                    <div class="glass-card">
+                        <h5 class="fw-800 mb-4 border-bottom pb-3">Routing & Fulfillment</h5>
+                        <div class="row g-4">
+                            <div class="col-md-6 border-end">
+                                <div class="info-label text-primary"><i class="bi bi-geo-alt-fill me-1"></i> Origin (Sender)</div>
+                                <div class="info-value">@Model.SenderName</div>
+                                <div class="text-muted smaller">@Model.SenderAddress</div>
+                                <div class="fw-bold smaller text-dark">@Model.SenderCity, @Model.SenderProvince</div>
+                                <div class="smaller mt-2"><i class="bi bi-telephone me-1"></i> @Model.SenderPhone</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-label text-success"><i class="bi bi-flag-fill me-1"></i> Destination (Receiver)</div>
+                                <div class="info-value">@Model.ReceiverName</div>
+                                <div class="text-muted smaller">@Model.ReceiverAddress</div>
+                                <div class="fw-bold smaller text-dark">@Model.ReceiverCity, @Model.ReceiverProvince</div>
+                                <div class="smaller mt-2"><i class="bi bi-telephone me-1"></i> @Model.ReceiverPhone</div>
+                            </div>
+                            <div class="col-12"><hr class="opacity-5"></div>
+                            <div class="col-md-3">
+                                <div class="info-label">Parcel Type</div>
+                                <div class="info-value">@Model.ParcelType</div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="info-label">Current Weight</div>
+                                <div class="info-value">@Model.ParcelWeight KG</div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="info-label">Service Level</div>
+                                <div class="badge bg-dark rounded-pill px-3">@Model.DeliveryOption</div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="info-label">Status</div>
+                                <div class="fw-800 text-primary">@Model.Status</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FLEET & PROOF OF DELIVERY -->
+                    <div class="glass-card">
+                        <h5 class="fw-800 mb-4">Operations & Compliance</h5>
+
+                        @if (Model.Status == AppConstants.ShipmentStatuses.Pending)
+                        {
+                            <div class="p-4 rounded-4 bg-warning bg-opacity-10 border border-warning border-opacity-25 no-print text-center">
+                                <i class="bi bi-shield-lock-fill text-warning fs-1 mb-2"></i>
+                                <h6 class="fw-800">Dispatch Authorization Required</h6>
+                                <p class="smaller text-muted mb-4">Assign a fleet driver to authorize the pickup sequence.</p>
+
+                                @using (Html.BeginForm("ApprovePickup", "Dispatcher", new { id = Model.Id }, FormMethod.Post, new { @class = "row g-2 justify-content-center" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <div class="col-md-6">
+                                        <select name="driverId" class="form-select rounded-pill border-primary" required>
+                                            <option value="">-- Assign Fleet Driver --</option>
+                                            @foreach (var d in drivers)
+                                            {
+                                                <option value="@d.Id">@d.Name @d.Surname (@d.UserName)</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button type="submit" class="btn btn-primary btn-premium w-100 shadow-sm">Authorize</button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="row g-4 align-items-center">
+                                <div class="col-md-7">
+                                    <div class="d-flex align-items-center p-3 bg-light rounded-4 border">
+                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm" style="width:50px; height:50px;">
+                                            <i class="bi bi-truck fs-4"></i>
+                                        </div>
+                                        <div>
+                                            <div class="info-label">Assigned Courier</div>
+                                            <div class="fw-800 text-dark">@(Model.AssignedDriver?.Name ?? "N/A") @(Model.AssignedDriver?.Surname ?? "")</div>
+                                            <div class="smaller text-muted">@Model.AssignedDriver?.Email</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    @if (!string.IsNullOrEmpty(Model.ProofOfDeliveryPath))
+                                    {
+                                        <div class="info-label mb-2 text-success"><i class="bi bi-camera-fill me-1"></i> Proof of Delivery</div>
+                                        <a href="@Model.ProofOfDeliveryPath" target="_blank">
+                                            <img src="@Model.ProofOfDeliveryPath" class="pod-preview" alt="POD Image" />
+                                        </a>
+                                        <div class="smaller text-muted mt-1 text-center font-monospace">Signed by: @Model.ReceiverName</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="p-3 bg-light rounded-4 border text-center text-muted smaller">
+                                            <i class="bi bi-hourglass-split d-block mb-1"></i>
+                                            Waiting for delivery signature.
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- AUDIT SIDEBAR -->
+                <div class="col-lg-4">
+                    <div class="glass-card h-100">
+                        <h5 class="fw-800 mb-4"><i class="bi bi-fingerprint text-primary me-2"></i>Security Audit</h5>
+                        <ul class="history-list">
+                            @if (Model.StatusHistories != null && Model.StatusHistories.Any())
+                            {
+                                foreach (var history in Model.StatusHistories.OrderByDescending(x => x.Timestamp))
+                                {
+                                    <li class="history-item">
+                                        <div class="fw-800 text-dark smaller">@history.Status</div>
+                                        <div class="text-muted" style="font-size: 0.65rem;">@history.Timestamp.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</div>
+                                        @if (!string.IsNullOrEmpty(history.Notes))
+                                        {
+                                            <div class="bg-light p-2 rounded-3 mt-2 smaller text-secondary border">
+                                                @history.Notes
+                                            </div>
+                                        }
+                                    </li>
+                                }
+                            }
+                            <li class="history-item" style="opacity: 0.5;">
+                                <div class="fw-800 text-dark smaller">Digital Creation</div>
+                                <div class="text-muted" style="font-size: 0.65rem;">@Model.CreatedDate.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="text-center text-muted small mt-5 pb-4">
+                <i class="bi bi-shield-check me-1"></i> Authorized Personnel Only | Data Sensitivity: High | © @DateTime.Now.Year MyCourierSA
+            </footer>
+        </div>
+    </div>
+</body>
+</html></html>

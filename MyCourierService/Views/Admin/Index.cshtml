@@ -1,0 +1,321 @@
+﻿@model IEnumerable<MyCourierSA.Models.Shipment>
+@using MyCourierSA.Constants
+@{
+    Layout = null;
+    var drivers = ViewBag.Drivers as IEnumerable<MyCourierSA.Models.ApplicationUser> ?? new List<MyCourierSA.Models.ApplicationUser>();
+
+    // Stats passed from the Controller
+    decimal totalRevenue = ViewBag.TotalRevenue ?? 0m;
+    decimal walletLiability = ViewBag.WalletLiability ?? 0m;
+    decimal monthlyPayouts = ViewBag.MonthlyPayouts ?? 0m;
+    int totalShipments = ViewBag.TotalShipments ?? 0;
+    int openTickets = ViewBag.OpenTickets ?? 0;
+
+    // Filter pending shipments for the quick action queue
+    var pendingShipments = Model.Where(x => x.Status == AppConstants.ShipmentStatuses.Pending).ToList();
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HQ Operations Center - MyCourierSA</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background: #f8fafc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .main-overlay {
+            background: linear-gradient(135deg, rgba(245, 247, 250, 0.96) 0%, rgba(230, 235, 245, 0.96) 100%);
+            min-height: 100vh;
+            backdrop-filter: blur(12px);
+            padding-bottom: 5rem;
+        }
+
+        .glass-card {
+            background: white;
+            border-radius: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+            padding: 1.8rem;
+            margin-bottom: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        /* Menu Tiles */
+        .menu-tile {
+            text-align: center;
+            padding: 1.8rem 1rem;
+            border-bottom: 5px solid #0d6efd;
+            text-decoration: none;
+            display: block;
+            height: 100%;
+            background: #fff;
+            transition: 0.3s;
+        }
+
+            .menu-tile:hover {
+                transform: translateY(-8px);
+                box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+            }
+
+            .menu-tile i {
+                font-size: 2.2rem;
+                margin-bottom: 0.8rem;
+                display: block;
+            }
+
+            .menu-tile small {
+                font-weight: 800;
+                color: #64748b;
+                text-transform: uppercase;
+                font-size: 0.65rem;
+                letter-spacing: 1.5px;
+            }
+
+            .menu-tile h3 {
+                font-weight: 800;
+                margin: 0;
+                color: #1e293b;
+                font-size: 1rem;
+            }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .btn-premium {
+            border-radius: 50rem;
+            padding: 0.6rem 1.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        .pulse-danger {
+            animation: pulse-red 2s infinite;
+        }
+
+        @@keyframes pulse-red {
+            0% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-overlay">
+        <div class="container">
+
+            <!-- TOP NAVIGATION -->
+            <nav class="d-flex justify-content-between align-items-center py-4 mb-4 border-bottom border-secondary border-opacity-10">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-shield-lock-fill text-primary fs-3 me-3"></i>
+                    <h2 class="fw-bold mb-0" style="letter-spacing: -1px;">MyCourier <span class="text-primary">HQ</span></h2>
+                </div>
+                <div class="d-flex gap-2">
+                    @using (Html.BeginForm("LogOff", "Account", FormMethod.Post, new { @class = "m-0" }))
+                    {
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-danger btn-premium">Sign Out</button>
+                    }
+                </div>
+            </nav>
+
+            <!-- EXECUTIVE OVERVIEW STATS -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="glass-card mb-0 h-100 border-start border-4 border-success">
+                        <small class="text-muted text-uppercase fw-bold">Delivered Revenue</small>
+                        <div class="stat-value text-success">R @totalRevenue.ToString("N2")</div>
+                        <p class="small text-muted mb-0">Total Life-time Income</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card mb-0 h-100 border-start border-4 border-warning">
+                        <small class="text-muted text-uppercase fw-bold">Wallet Liability</small>
+                        <div class="stat-value text-warning">R @walletLiability.ToString("N2")</div>
+                        <p class="small text-muted mb-0">Total Owed to Users/Drivers</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card mb-0 h-100 border-start border-4 border-primary">
+                        <small class="text-muted text-uppercase fw-bold">System Volume</small>
+                        <div class="stat-value text-primary">@totalShipments</div>
+                        <p class="small text-muted mb-0">Processed Shipments</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card mb-0 h-100 border-start border-4 border-danger @(openTickets > 0 ? "pulse-danger" : "")">
+                        <small class="text-muted text-uppercase fw-bold">Critical Tickets</small>
+                        <div class="stat-value text-danger">@openTickets</div>
+                        <p class="small text-muted mb-0">Open Support Requests</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PRIMARY CONTROL TILES -->
+            <div class="row g-4 mb-5">
+                <div class="col">
+                    <a href="@Url.Action("RevenueReport")" class="glass-card menu-tile border-success text-decoration-none">
+                        <i class="bi bi-graph-up-arrow text-success"></i>
+                        <small>Financial</small>
+                        <h3>REPORTS</h3>
+                    </a>
+                </div>
+                <div class="col">
+                    <a href="@Url.Action("DriverPayouts")" class="glass-card menu-tile border-primary text-decoration-none">
+                        <i class="bi bi-cash-stack text-primary"></i>
+                        <small>Commission</small>
+                        <h3>PAYOUTS</h3>
+                    </a>
+                </div>
+                <div class="col">
+                    <a href="@Url.Action("SupportTickets")" class="glass-card menu-tile border-danger text-decoration-none">
+                        <i class="bi bi-headset text-danger"></i>
+                        <small>Resolution</small>
+                        <h3>SUPPORT</h3>
+                    </a>
+                </div>
+                <div class="col">
+                    <a href="@Url.Action("Users")" class="glass-card menu-tile border-info text-decoration-none">
+                        <i class="bi bi-people-fill text-info"></i>
+                        <small>Personnel</small>
+                        <h3>REGISTRY</h3>
+                    </a>
+                </div>
+                <div class="col">
+                    <a href="@Url.Action("SystemTransactions")" class="glass-card menu-tile border-dark text-decoration-none">
+                        <i class="bi bi-bank2 text-dark"></i>
+                        <small>Audit</small>
+                        <h3>LEDGER</h3>
+                    </a>
+                </div>
+            </div>
+
+            <!-- LIVE SHIPMENT QUEUE -->
+            <div class="glass-card">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="fw-bold mb-0"><i class="bi bi-lightning-charge-fill text-warning me-2"></i>Shipment Approval Queue</h4>
+                    <span class="badge bg-primary rounded-pill p-2 px-3 fw-bold">@pendingShipments.Count Awaiting Driver Assignment</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table align-middle table-hover">
+                        <thead class="table-light">
+                            <tr class="text-uppercase small text-muted fw-bold">
+                                <th>Tracking #</th>
+                                <th>Destination</th>
+                                <th>Shipment Value</th>
+                                <th>Assign Fleet Driver</th>
+                                <th class="text-end">Command</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in pendingShipments)
+                            {
+                                var formId = $"assign_form_{s.Id}";
+                                <tr>
+                                    <td class="font-monospace fw-bold text-primary">#@s.TrackingNumber</td>
+                                    <td>
+                                        <div class="fw-bold">@s.ReceiverName</div>
+                                        <div class="small text-muted">@s.ReceiverCity</div>
+                                    </td>
+                                    <td class="fw-bold text-success">R @s.Price.ToString("N2")</td>
+                                    <td>
+                                        @using (Html.BeginForm("UpdateStatus", "Admin", FormMethod.Post, new { id = formId }))
+                                        {
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@s.Id" />
+                                            <input type="hidden" name="newStatus" value="@AppConstants.ShipmentStatuses.AssignedForPickup" />
+                                            <input type="hidden" name="notes" value="Admin approved and assigned driver." />
+
+                                            <select name="assignedDriverId" class="form-select form-select-sm rounded-pill border-primary" required>
+                                                <option value="">-- Choose Driver --</option>
+                                                @foreach (var d in drivers)
+                                                {
+                                                    <option value="@d.Id">@d.Name @d.Surname (@d.UserName)</option>
+                                                }
+                                            </select>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-flex justify-content-end gap-2">
+                                            <button type="submit" form="@formId" class="btn btn-primary btn-premium btn-sm">Authorize</button>
+
+                                            @using (Html.BeginForm("AdminCancel", "Admin", new { id = s.Id }, FormMethod.Post))
+                                            {
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-outline-danger btn-premium btn-sm" onclick="return confirm('Void shipment @s.TrackingNumber?');">Void</button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @if (!pendingShipments.Any())
+                {
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-check2-circle fs-1 opacity-25"></i>
+                        <p class="fw-bold mt-2">Logistics Approval Queue is empty. All shipments are active.</p>
+                    </div>
+                }
+            </div>
+
+            <!-- SECONDARY UTILITY TILES -->
+            <div class="row g-3 mt-2">
+                <div class="col-md-3">
+                    <a href="@Url.Action("Archives")" class="glass-card d-flex align-items-center text-decoration-none p-3 mb-0">
+                        <div class="bg-info bg-opacity-10 p-3 rounded-4 me-3 text-info"><i class="bi bi-archive-fill fs-3"></i></div>
+                        <div><h6 class="fw-bold text-dark mb-0">Archives</h6><small class="text-muted">History Ledger</small></div>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="@Url.Action("AuditLogs")" class="glass-card d-flex align-items-center text-decoration-none p-3 mb-0">
+                        <div class="bg-warning bg-opacity-10 p-3 rounded-4 me-3 text-warning"><i class="bi bi-shield-lock fs-3"></i></div>
+                        <div><h6 class="fw-bold text-dark mb-0">Audit Logs</h6><small class="text-muted">Security Scans</small></div>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="@Url.Action("CreateStaff")" class="glass-card d-flex align-items-center text-decoration-none p-3 mb-0">
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-4 me-3 text-primary"><i class="bi bi-person-plus-fill fs-3"></i></div>
+                        <div><h6 class="fw-bold text-dark mb-0">Onboard</h6><small class="text-muted">Add Personnel</small></div>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="@Url.Action("Settings")" class="glass-card d-flex align-items-center text-decoration-none p-3 mb-0">
+                        <div class="bg-secondary bg-opacity-10 p-3 rounded-4 me-3 text-secondary"><i class="bi bi-gear-fill fs-3"></i></div>
+                        <div><h6 class="fw-bold text-dark mb-0">Config</h6><small class="text-muted">System Rates</small></div>
+                    </a>
+                </div>
+            </div>
+
+            <p class="text-center text-muted small mt-5">© @DateTime.Now.Year MyCourier HQ - Executive Command Center</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

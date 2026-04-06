@@ -1,0 +1,291 @@
+﻿
+@model MyCourierSA.Models.Shipment
+
+@{
+    ViewBag.Title = "Report Issue";
+    Layout = null;
+}
+
+<!-- Premium Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- TOP NAVIGATION BAR -->
+<nav class="navbar web-navbar sticky-top shadow-sm mb-4">
+    <div class="container d-flex justify-content-between align-items-center">
+        <a href="@Url.Action("Index", "Driver")" class="btn btn-back">
+            <i class="fas fa-arrow-left me-2"></i> Dashboard
+        </a>
+
+        <div class="navbar-brand fw-bold fs-4 m-0">
+            <i class="fas fa-shipping-fast text-primary me-2"></i> MyCourier<span class="text-primary">SA</span>
+        </div>
+
+        @using (Html.BeginForm("LogOff", "Account", FormMethod.Post, new { id = "logoutForm", @class = "m-0" }))
+        {
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-logout">
+                Logout <i class="fas fa-sign-out-alt ms-2"></i>
+            </button>
+        }
+    </div>
+</nav>
+
+<div class="container web-dashboard-container pb-5">
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+
+            <!-- HEADER SECTION -->
+            <div class="report-header mb-4">
+                <h2 class="fw-bold text-danger mb-1"><i class="fas fa-exclamation-circle me-2"></i>Report Delivery Issue</h2>
+                <p class="text-muted">Something went wrong? Tell us why this parcel couldn't be delivered.</p>
+            </div>
+
+            <!-- PARCEL SUMMARY CARD -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+                <div class="row g-0">
+                    <div class="col-md-4 bg-danger d-flex flex-column justify-content-center align-items-center text-white p-4">
+                        <i class="fas fa-box-open fa-3x mb-3 opacity-50"></i>
+                        <h5 class="fw-bold mb-0">#@Model.TrackingNumber</h5>
+                        <span class="small opacity-75">Parcel Identification</span>
+                    </div>
+                    <div class="col-md-8 p-4 bg-white">
+                        <div class="row">
+                            <div class="col-sm-6 mb-3 mb-sm-0">
+                                <label class="text-muted smaller fw-bold text-uppercase">Recipient</label>
+                                <h6 class="fw-bold text-main">@Model.ReceiverName</h6>
+                                <p class="small text-muted mb-0">@Model.ReceiverPhone</p>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="text-muted smaller fw-bold text-uppercase">Address</label>
+                                <p class="small text-main mb-0 fw-medium">@Model.ReceiverAddress</p>
+                                <p class="small text-muted mb-0">@Model.ReceiverCity</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAIN FORM -->
+            @using (Html.BeginForm("ReportIssue", "Driver", FormMethod.Post, new { id = "issueForm" }))
+            {
+                @Html.AntiForgeryToken()
+                @Html.Hidden("id", Model.Id)
+
+                <h5 class="fw-bold text-main mb-3">Select the reason for failure:</h5>
+
+                <!-- REASON TILES GRID -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4 col-sm-6">
+                        <input type="radio" class="btn-check" name="reason" id="reason1" value="Customer not at home" required>
+                        <label class="reason-tile shadow-sm h-100 w-100" for="reason1">
+                            <i class="fas fa-user-slash"></i>
+                            <span>Not at Home</span>
+                        </label>
+                    </div>
+                    <div class="col-md-4 col-sm-6">
+                        <input type="radio" class="btn-check" name="reason" id="reason2" value="Wrong Address / Cannot Locate">
+                        <label class="reason-tile shadow-sm h-100 w-100" for="reason2">
+                            <i class="fas fa-map-marked-alt"></i>
+                            <span>Wrong Address</span>
+                        </label>
+                    </div>
+                    <div class="col-md-4 col-sm-6">
+                        <input type="radio" class="btn-check" name="reason" id="reason3" value="Customer Rejected Parcel">
+                        <label class="reason-tile shadow-sm h-100 w-100" for="reason3">
+                            <i class="fas fa-handshake-slash"></i>
+                            <span>Rejected</span>
+                        </label>
+                    </div>
+                    <div class="col-md-4 col-sm-6">
+                        <input type="radio" class="btn-check" name="reason" id="reason4" value="Access Denied (Gate/Security)">
+                        <label class="reason-tile shadow-sm h-100 w-100" for="reason4">
+                            <i class="fas fa-door-closed"></i>
+                            <span>Access Denied</span>
+                        </label>
+                    </div>
+                    <div class="col-md-4 col-sm-6">
+                        <input type="radio" class="btn-check" name="reason" id="reason5" value="Vehicle Breakdown">
+                        <label class="reason-tile shadow-sm h-100 w-100" for="reason5">
+                            <i class="fas fa-tools"></i>
+                            <span>Breakdown</span>
+                        </label>
+                    </div>
+                    <div class="col-md-4 col-sm-6">
+                        <input type="radio" class="btn-check" name="reason" id="reasonOther" value="Other" onclick="showOther()">
+                        <label class="reason-tile shadow-sm h-100 w-100" for="reasonOther">
+                            <i class="fas fa-comment-dots"></i>
+                            <span>Other Reason</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- ADDITIONAL NOTES (Dynamic) -->
+                <div class="form-group mb-4 d-none" id="otherInputContainer">
+                    <label class="fw-bold text-main mb-2">Please specify details:</label>
+                    <textarea name="otherReasonText" id="otherReasonText" class="form-control rounded-4 p-3 shadow-sm" rows="3" placeholder="Describe the situation here..."></textarea>
+                </div>
+
+                <!-- ALERT -->
+                <div class="alert alert-soft-danger d-flex align-items-center rounded-4 mb-4">
+                    <i class="fas fa-info-circle fs-4 me-3"></i>
+                    <div class="smaller">
+                        By submitting this report, the parcel will be marked as <strong>Delivery Failed</strong> and must be returned to the warehouse sorting area.
+                    </div>
+                </div>
+
+                <!-- FORM ACTIONS -->
+                <div class="row g-3">
+                    <div class="col-md-4 order-2 order-md-1">
+                        <a href="@Url.Action("Index", "Driver")" class="btn btn-light w-100 rounded-pill py-3 fw-bold text-muted">Cancel</a>
+                    </div>
+                    <div class="col-md-8 order-1 order-md-2">
+                        <button type="submit" class="btn btn-danger w-100 rounded-pill py-3 fw-bold shadow-lg" onclick="handleSubmit()">
+                            Submit Report & Remove from Route
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    function showOther() {
+        document.getElementById('otherInputContainer').classList.remove('d-none');
+    }
+
+    // Hide other input if a different tile is clicked
+    document.querySelectorAll('input[name="reason"]').forEach((elem) => {
+        elem.addEventListener("change", function (event) {
+            if (event.target.id !== "reasonOther") {
+                document.getElementById('otherInputContainer').classList.add('d-none');
+            }
+        });
+    });
+
+    function handleSubmit() {
+        const otherRadio = document.getElementById('reasonOther');
+        const otherText = document.getElementById('otherReasonText');
+
+        if (otherRadio.checked && otherText.value.trim() !== "") {
+            // Append the text to the radio value so controller receives it
+            otherRadio.value = "Other: " + otherText.value;
+        }
+    }
+</script>
+
+<style>
+    :root {
+        --primary-color: #3b82f6;
+        --danger-color: #ef4444;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+        --bg-color: #f8fafc;
+    }
+
+    body {
+        background-color: var(--bg-color);
+        font-family: 'Poppins', sans-serif;
+    }
+
+    /* Top Nav Style (Sync with Index) */
+    .web-navbar {
+        background: white;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .btn-back {
+        color: var(--text-muted);
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        font-weight: 500;
+    }
+
+    .btn-logout {
+        color: var(--danger-color);
+        background: #fef2f2;
+        border: none;
+        border-radius: 10px;
+        padding: 8px 16px;
+        font-weight: 600;
+    }
+
+    /* Tile Styles */
+    .reason-tile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 25px 15px;
+        background: white;
+        border: 2px solid transparent;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+    }
+
+        .reason-tile i {
+            font-size: 1.8rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .reason-tile span {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+
+    .btn-check:checked + .reason-tile {
+        border-color: var(--danger-color);
+        background-color: #fff1f2;
+    }
+
+        .btn-check:checked + .reason-tile i {
+            color: var(--danger-color);
+        }
+
+        .btn-check:checked + .reason-tile span {
+            color: var(--danger-color);
+        }
+
+    .reason-tile:hover {
+        transform: translateY(-3px);
+        border-color: #e2e8f0;
+    }
+
+    /* UI Utilities */
+    .alert-soft-danger {
+        background-color: #fff1f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+    }
+
+    .smaller {
+        font-size: 0.75rem;
+    }
+
+    .text-main {
+        color: var(--text-main);
+    }
+
+    .btn-danger {
+        background-color: var(--danger-color);
+        border: none;
+    }
+
+        .btn-danger:hover {
+            background-color: #dc2626;
+            transform: scale(1.01);
+        }
+
+    @@media (max-width: 768px) {
+        .report-header {
+            text-align: center;
+        }
+    }
+</style>

@@ -1,0 +1,294 @@
+﻿@model IEnumerable<MyCourierSA.Models.SupportTicket>
+@using MyCourierSA.Constants
+@{
+    Layout = null;
+    ViewBag.Title = "Support Hub";
+    var myShipments = (IEnumerable<MyCourierSA.Models.Shipment>)ViewBag.MyShipments;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewBag.Title | MyCourierSA</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+    <style>
+        body {
+            background: linear-gradient(135deg, rgba(10, 15, 30, 0.85), rgba(10, 15, 30, 0.95)), url('/Content/Images/courier-bg.jpg');
+            background-size: cover;
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 40px 0;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+            color: #2c3e50;
+        }
+
+        .nav-pills .nav-link {
+            color: #6c757d;
+            font-weight: 700;
+            padding: 12px 20px;
+            border-radius: 10px;
+            transition: 0.3s;
+        }
+
+            .nav-pills .nav-link.active {
+                background-color: #0d6efd;
+                box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+            }
+
+        .ticket-row {
+            transition: 0.2s;
+            border-left: 4px solid transparent;
+        }
+
+            .ticket-row:hover {
+                background: #f8f9fa;
+                border-left-color: #0d6efd;
+            }
+
+        .urgent-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            border-left: 5px solid #dc3545;
+        }
+
+        .tab-content {
+            margin-top: 2rem;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @@keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="glass-panel mx-auto" style="max-width: 1150px;">
+
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 border-bottom pb-4">
+                <div>
+                    <h1 class="fw-bold mb-0 text-dark"><i class="bi bi-headset text-primary me-2"></i> Support Hub</h1>
+                    <p class="text-muted mb-0">Help Desk & Resolution Center</p>
+                </div>
+                <a href="@Url.Action("Index", "Customer")" class="btn btn-outline-dark rounded-pill px-4 fw-bold">
+                    <i class="bi bi-arrow-left me-1"></i> Dashboard
+                </a>
+            </div>
+
+            <!-- Alerts -->
+            @if (TempData["Success"] != null)
+            {<div class="alert alert-success border-0 shadow-sm rounded-4 mb-4">@TempData["Success"]</div>}
+            @if (TempData["Error"] != null)
+            {<div class="alert alert-danger border-0 shadow-sm rounded-4 mb-4">@TempData["Error"]</div>}
+
+            <div class="row g-5">
+
+                <!-- Main Content (Tabs) -->
+                <div class="col-lg-8">
+                    <ul class="nav nav-pills nav-fill bg-light p-2 rounded-4" id="supportTabs" role="tablist">
+                        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#my-tickets">My Tickets</button></li>
+                        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#new-ticket">New Inquiry</button></li>
+                        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#address">Fix Address</button></li>
+                        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#claim">Insurance</button></li>
+                    </ul>
+
+                    <div class="tab-content">
+
+                        <!-- 1. MY TICKETS LIST -->
+                        <div class="tab-pane fade show active" id="my-tickets">
+                            <h5 class="fw-bold mb-3">Recent Conversations</h5>
+                            <div class="list-group list-group-flush border rounded-4 overflow-hidden">
+                                @if (!Model.Any())
+                                {
+                                    <div class="list-group-item py-5 text-center text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                        You have no active support tickets.
+                                    </div>
+                                }
+                                @foreach (var t in Model)
+                                {
+                                    <a href="@Url.Action("ViewTicket", new { id = t.Id })" class="list-group-item ticket-row py-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1 fw-bold text-dark">@t.Subject</h6>
+                                                <small class="text-muted">ID: #@t.Id | Created: @t.CreatedDate.ToString("dd MMM")</small>
+                                            </div>
+                                            <span class="badge @(t.Status == "Open" ? "bg-warning text-dark" : "bg-success") rounded-pill px-3">@t.Status</span>
+                                        </div>
+                                    </a>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- 2. NEW GENERAL INQUIRY -->
+                        <div class="tab-pane fade" id="new-ticket">
+                            <h5 class="fw-bold mb-3">Submit a Help Ticket</h5>
+                            @using (Html.BeginForm("SubmitTicket", "Customer", FormMethod.Post))
+                            {
+                                @Html.AntiForgeryToken()
+                                <div class="form-floating mb-3">
+                                    <input type="text" name="subject" class="form-control" placeholder="Subject" required />
+                                    <label>Brief Subject</label>
+                                </div>
+                                <div class="form-floating mb-3">
+                                    <textarea name="message" class="form-control" style="height: 120px" placeholder="Details" required></textarea>
+                                    <label>How can we help you?</label>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold">Send Message</button>
+                            }
+                        </div>
+
+                        <!-- 3. ADDRESS CORRECTION (Zonal Dropdowns) -->
+                        <div class="tab-pane fade" id="address">
+                            <h5 class="fw-bold mb-1 text-primary">Correct Destination Details</h5>
+                            <p class="text-muted small mb-4">Only possible for parcels not yet collected.</p>
+
+                            @using (Html.BeginForm("RequestAddressCorrection", "Customer", FormMethod.Post))
+                            {
+                                @Html.AntiForgeryToken()
+                                <div class="form-floating mb-3">
+                                    <select name="shipmentId" class="form-select" required>
+                                        <option value="">-- Select Active Shipment --</option>
+                                        @foreach (var s in myShipments.Where(x => x.Status == "Pending" || x.Status == "Approved"))
+                                        {
+                                            <option value="@s.Id">@s.TrackingNumber (@s.ReceiverCity)</option>
+                                        }
+                                    </select>
+                                    <label>Shipment requiring update</label>
+                                </div>
+                                <div class="form-floating mb-3">
+                                    <input type="text" name="newAddress" class="form-control" placeholder="Street" required />
+                                    <label>New Street Address</label>
+                                </div>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="small fw-bold text-muted ms-2">Province</label>
+                                        <select name="newProvince" id="SupportProvince" class="form-select" required>
+                                            <option value="">-- Select --</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="small fw-bold text-muted ms-2">City</label>
+                                        <select name="newCity" id="SupportCity" class="form-select" required disabled>
+                                            <option value="">-- Select --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold">Apply Correction</button>
+                            }
+                        </div>
+
+                        <!-- 4. INSURANCE CLAIM -->
+                        <div class="tab-pane fade" id="claim">
+                            <h5 class="fw-bold mb-3 text-danger">Insurance Claim Request</h5>
+                            @using (Html.BeginForm("SubmitTicket", "Customer", FormMethod.Post))
+                            {
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="subject" value="INSURANCE CLAIM" />
+                                <div class="row g-2 mb-3">
+                                    <div class="col-md-12 form-floating">
+                                        <select name="shipmentId" class="form-select" required>
+                                            <option value="">-- Select Shipment --</option>
+                                            @foreach (var s in myShipments)
+                                            {
+                                                <option value="@s.Id">@s.TrackingNumber (@s.Status)</option>
+                                            }
+                                        </select>
+                                        <label>Shipment</label>
+                                    </div>
+                                </div>
+                                <div class="form-floating mb-3">
+                                    <textarea name="message" class="form-control" style="height: 100px" placeholder="Details" required></textarea>
+                                    <label>Explain what happened (Damaged/Lost/Missing)...</label>
+                                </div>
+                                <div class="alert alert-warning small">
+                                    <i class="bi bi-info-circle me-1"></i> Claims are reviewed by Admin within 24-48 hours.
+                                </div>
+                                <button type="submit" class="btn btn-danger w-100 rounded-pill fw-bold">Submit Claim</button>
+                            }
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Sidebar (Urgent Info) -->
+                <div class="col-lg-4">
+                    <div class="urgent-card p-4 shadow-sm mb-4">
+                        <h5 class="fw-bold text-danger mb-2"><i class="bi bi-lightning-charge-fill"></i> Need Urgent Help?</h5>
+                        <p class="small text-muted">For parcels currently out for delivery:</p>
+                        <h4 class="fw-bolder text-dark mb-0">0800-COURIER</h4>
+                        <div class="mt-3 small text-primary fw-bold"><i class="bi bi-clock me-1"></i> Live Agents: 24/7</div>
+                    </div>
+
+                    <div class="bg-light p-4 rounded-4 shadow-sm border mb-4">
+                        <h6 class="fw-bold mb-3">FAQ Quick Links</h6>
+                        <ul class="list-unstyled small mb-0">
+                            <li class="mb-2"><i class="bi bi-question-circle text-primary me-2"></i> When is collection? (Within 4hrs)</li>
+                            <li class="mb-2"><i class="bi bi-question-circle text-primary me-2"></i> Can I change speed? (No)</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-light p-4 rounded-4 shadow-sm border">
+                        <h6 class="fw-bold mb-3">Direct Contact</h6>
+                        <div class="mb-2 small"><i class="bi bi-envelope-fill me-2 text-primary"></i> support@mycourier.co.za</div>
+                        <div class="small"><i class="bi bi-whatsapp me-2 text-success"></i> +27 82 123 4567</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Zonal Routing for the "Fix Address" Tab
+        const saLocations = {
+            "Eastern Cape": ["Gqeberha (PE)", "East London", "Mthatha", "Makhanda", "Uitenhage"],
+            "Free State": ["Bloemfontein", "Welkom", "Sasolburg", "Kroonstad", "Bethlehem"],
+            "Gauteng": ["Johannesburg", "Pretoria", "Centurion", "Midrand", "Sandton"],
+            "KwaZulu-Natal": ["Durban", "Pietermaritzburg", "Richards Bay", "Newcastle", "Port Shepstone"],
+            "Limpopo": ["Polokwane", "Tzaneen", "Mokopane", "Thohoyandou", "Bela-Bela"],
+            "Mpumalanga": ["Mbombela (Nelspruit)", "eMalahleni (Witbank)", "Secunda", "Middelburg", "Ermelo"],
+            "North West": ["Rustenburg", "Mahikeng", "Potchefstroom", "Klerksdorp", "Brits"],
+            "Northern Cape": ["Kimberley", "Upington", "Springbok", "Kuruman", "De Aar"],
+            "Western Cape": ["Cape Town", "Stellenbosch", "George", "Paarl", "Worcester"]
+        };
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const provSelect = document.getElementById("SupportProvince");
+            const citySelect = document.getElementById("SupportCity");
+
+            Object.keys(saLocations).sort().forEach(p => provSelect.add(new Option(p, p)));
+
+            provSelect.addEventListener("change", function () {
+                citySelect.innerHTML = '<option value="">-- Select City --</option>';
+                if (this.value) {
+                    citySelect.disabled = false;
+                    saLocations[this.value].sort().forEach(c => citySelect.add(new Option(c, c)));
+                } else {
+                    citySelect.disabled = true;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

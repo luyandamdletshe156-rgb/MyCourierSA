@@ -1,0 +1,339 @@
+﻿@model MyCourierSA.Models.Shipment
+@{
+    Layout = null;
+    ViewBag.Title = "Track Shipment - " + Model.TrackingNumber;
+
+    // Map the system statuses to 5 clean visual steps for the Customer
+    int currentStep = 0;
+    // Standardizing status checks to match your AppConstants
+    if (Model.Status == "Pending" || Model.Status == "Approved") { currentStep = 0; }
+    else if (Model.Status.Contains("Pickup") || Model.Status == "Collected") { currentStep = 1; }
+    else if (Model.Status == "At Warehouse") { currentStep = 2; }
+    else if (Model.Status.Contains("Delivery") || Model.Status == "In Transit") { currentStep = 3; }
+    else if (Model.Status == "Delivered") { currentStep = 4; }
+
+    string[] visualSteps = { "Order Placed", "Collection", "Warehouse", "In Transit", "Delivered" };
+    string[] icons = { "bi-receipt", "bi-box-arrow-up", "bi-building", "bi-truck", "bi-house-check-fill" };
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewBag.Title</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, rgba(15, 30, 50, 0.8) 0%, rgba(10, 15, 25, 0.95) 100%), url('/Content/Images/shipment-bg.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', sans-serif;
+            padding-bottom: 3rem;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(15px);
+            border-radius: 1.25rem;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            color: #2c3e50;
+            margin-top: 2rem;
+        }
+
+        .inner-card {
+            background: rgba(248, 249, 250, 0.8);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            height: 100%;
+        }
+
+        .info-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #6c757d;
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+        }
+
+        .info-value {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #212529;
+            margin-bottom: 1rem;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+            color: #0d6efd;
+        }
+
+        /* Timeline */
+        .timeline-wrapper {
+            position: relative;
+            padding: 2rem 0;
+        }
+
+        .timeline-line {
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            right: 10%;
+            height: 4px;
+            background-color: #e9ecef;
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+
+        .timeline-progress {
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            height: 4px;
+            background-color: #0d6efd;
+            transform: translateY(-50%);
+            z-index: 2;
+            transition: width 0.8s ease;
+        }
+
+        .timeline-step {
+            position: relative;
+            z-index: 3;
+            text-align: center;
+            width: 20%;
+        }
+
+        .step-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #fff;
+            border: 4px solid #e9ecef;
+            color: #adb5bd;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: 0.3s;
+        }
+
+        .timeline-step.completed .step-icon {
+            border-color: #0d6efd;
+            background-color: #0d6efd;
+            color: #fff;
+        }
+
+        .timeline-step.active .step-icon {
+            border-color: #0d6efd;
+            background-color: #fff;
+            color: #0d6efd;
+            box-shadow: 0 0 0 5px rgba(13, 110, 253, 0.2);
+        }
+
+        /* Log */
+        .log-item {
+            border-left: 3px solid #dee2e6;
+            padding-left: 1rem;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+            .log-item::before {
+                content: '';
+                position: absolute;
+                left: -7px;
+                top: 5px;
+                width: 11px;
+                height: 11px;
+                border-radius: 50%;
+                background: #adb5bd;
+            }
+
+        .log-latest::before {
+            background: #0d6efd;
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.2);
+        }
+
+        .parcel-img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 0.5rem;
+            border: 2px solid #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .btn-rate {
+            background: #ffc107;
+            color: #000;
+            font-weight: 700;
+            border: none;
+        }
+
+            .btn-rate:hover {
+                background: #e0a800;
+                color: #000;
+            }
+    </style>
+</head>
+<body>
+
+    <div class="container pt-4 pb-2 d-print-none d-flex justify-content-between align-items-center">
+        <a href="@Url.Action("Index", "Customer")" class="btn btn-outline-light rounded-pill px-4 shadow-sm">
+            <i class="bi bi-arrow-left me-2"></i> Back to Dashboard
+        </a>
+        <div class="d-flex gap-2">
+            @if (Model.Status == "Delivered")
+            {
+                <a href="@Url.Action("SubmitRating", "Customer", new { id = Model.Id })" class="btn btn-rate rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-star-fill me-2"></i> Rate Delivery
+                </a>
+            }
+            <button onclick="window.print()" class="btn btn-light rounded-pill px-4 shadow-sm fw-bold">
+                <i class="bi bi-printer me-2"></i> Print Receipt
+            </button>
+        </div>
+    </div>
+
+    <main class="container">
+        <div class="glass-panel mx-auto">
+            <!-- HEADER -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom">
+                <div>
+                    <h2 class="mb-0 fw-bold text-dark"><i class="bi bi-box-seam text-primary me-2"></i> Shipment Journey</h2>
+                    <small class="text-muted fw-bold">BOOKED ON: @Model.CreatedDate.ToString("f")</small>
+                </div>
+                <div class="text-end">
+                    <div class="info-label mb-0">Tracking Number</div>
+                    <h4 class="font-monospace text-primary fw-bolder bg-light border px-3 py-2 rounded-3 mb-0">@Model.TrackingNumber</h4>
+                </div>
+            </div>
+
+            <!-- VISUAL TIMELINE -->
+            <div class="inner-card mb-4 bg-white border-0 shadow-sm">
+                <div class="timeline-wrapper d-flex justify-content-between">
+                    <div class="timeline-line"></div>
+                    <div class="timeline-progress" style="width: @(currentStep * 25)%;"></div>
+
+                    @for (int i = 0; i < visualSteps.Length; i++)
+                    {
+                        <div class="timeline-step @(i < currentStep ? "completed" : i == currentStep ? "active" : "")">
+                            <div class="step-icon"><i class="bi @icons[i]"></i></div>
+                            <div class="step-label d-none d-md-block fw-bold small mt-2">@visualSteps[i]</div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <!-- LEFT COLUMN: ROUTE & HISTORY -->
+                <div class="col-lg-8">
+                    <div class="inner-card mb-4">
+                        <div class="section-title"><i class="bi bi-geo-alt-fill me-2"></i> Route Details</div>
+                        <div class="row">
+                            <div class="col-md-6 border-end">
+                                <h6 class="text-primary fw-bold mb-3">Sender (Origin)</h6>
+                                <div class="info-label">Name</div>
+                                <div class="info-value">@Model.SenderName</div>
+                                <div class="info-label">Address</div>
+                                <div class="info-value">@Model.SenderAddress, @Model.SenderCity, @Model.SenderProvince</div>
+                            </div>
+                            <div class="col-md-6 ps-md-4">
+                                <h6 class="text-success fw-bold mb-3">Receiver (Destination)</h6>
+                                <div class="info-label">Name</div>
+                                <div class="info-value">@Model.ReceiverName</div>
+                                <div class="info-label">Address</div>
+                                <div class="info-value">@Model.ReceiverAddress, @Model.ReceiverCity, @Model.ReceiverProvince</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- JOURNEY LOG (History) -->
+                    <div class="inner-card">
+                        <div class="section-title text-secondary"><i class="bi bi-clock-history me-2"></i> Detailed Journey Log</div>
+                        @if (Model.StatusHistories != null && Model.StatusHistories.Any())
+                        {
+                            foreach (var log in Model.StatusHistories.OrderByDescending(h => h.Timestamp))
+                            {
+                                <div class="log-item @(log == Model.StatusHistories.OrderByDescending(h => h.Timestamp).First() ? "log-latest" : "")">
+                                    <div class="d-flex justify-content-between">
+                                        <span class="fw-bold text-dark">@log.Status</span>
+                                        <span class="small text-muted">@log.Timestamp.ToString("dd MMM, HH:mm")</span>
+                                    </div>
+                                    <p class="small text-muted mb-0">@log.Notes</p>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: LOGISTICS, PHOTOS & FEEDBACK -->
+                <div class="col-lg-4">
+                    <div class="inner-card bg-primary bg-opacity-10 border-primary border-opacity-25 mb-4">
+                        <div class="section-title text-primary"><i class="bi bi-info-circle-fill me-2"></i> Parcel Info</div>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="info-label">Weight</div>
+                                <div class="info-value">@Model.ParcelWeight kg</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="info-label">Type</div>
+                                <div class="info-value">@Model.ParcelType</div>
+                            </div>
+                        </div>
+                        <div class="info-label">Delivery Speed</div>
+                        <div class="info-value">@Model.DeliveryOption</div>
+                        <div class="info-label">Total Paid</div>
+                        <div class="info-value text-success fs-4 mb-0">R @Model.Price.ToString("F2")</div>
+                    </div>
+
+                    <!-- NEW: FEEDBACK SECTION (Shows after delivery) -->
+                    @if (Model.Status == "Delivered")
+                    {
+                        <div class="inner-card border-warning border-opacity-50 mb-4" style="background: #fffdf5;">
+                            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-chat-heart-fill text-warning me-2"></i> Share Your Experience</h6>
+                            <p class="small text-muted mb-3">Your parcel has been delivered! How did we do?</p>
+                            <a href="@Url.Action("SubmitRating", "Customer", new { id = Model.Id })" class="btn btn-warning w-100 fw-bold rounded-pill">
+                                Write a Review
+                            </a>
+                        </div>
+                    }
+
+                    <!-- PHOTOS -->
+                    <div class="inner-card">
+                        <div class="section-title text-secondary border-0 mb-2">Parcel Photos</div>
+                        @if (Model.ShipmentFiles != null && Model.ShipmentFiles.Any(f => f.ContentType.StartsWith("image/")))
+                        {
+                            <div class="row g-2">
+                                @foreach (var file in Model.ShipmentFiles.Where(f => f.ContentType.StartsWith("image/")))
+                                {
+                                    <div class="col-6">
+                                        <img src="@Url.Action("GetShipmentImage", "Customer", new { fileId = file.Id })" class="parcel-img" alt="Parcel" />
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="small text-muted fst-italic">No photos attached.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

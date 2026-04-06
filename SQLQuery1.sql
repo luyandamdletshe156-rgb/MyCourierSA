@@ -1,0 +1,1 @@
+﻿UPDATE AspNetUsers SET IsActive = 1;

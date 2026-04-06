@@ -1,0 +1,338 @@
+﻿@model PagedList.IPagedList<MyCourierSA.Models.Shipment>
+@using PagedList.Mvc
+@using MyCourierSA.Constants
+@{
+    Layout = null; // Standalone Premium View
+    ViewBag.Title = "Global Shipment Archives";
+
+    // Safe casting for KPIs
+    decimal totalRev = ViewBag.TotalRevenue != null ? (decimal)ViewBag.TotalRevenue : 0m;
+    double successRate = ViewBag.SuccessRate != null ? (double)ViewBag.SuccessRate : 0.0;
+    int totalVol = ViewBag.TotalVolume != null ? (int)ViewBag.TotalVolume : 0;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewBag.Title - MyCourier HQ</title>
+
+    <!-- Google Fonts & Bootstrap -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css" />
+
+    <style>
+        :root {
+            --primary: #4361ee;
+            --success: #06d6a0;
+            --warning: #ffd166;
+            --danger: #ef476f;
+            --dark: #0f172a;
+        }
+
+        body {
+            background: #f8fafc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--dark);
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .main-overlay {
+            background: linear-gradient(135deg, rgba(245, 247, 250, 0.98) 0%, rgba(230, 235, 245, 0.98) 100%);
+            min-height: 100vh;
+            padding-bottom: 5rem;
+        }
+
+        .glass-card {
+            background: white;
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+            margin-bottom: 1.5rem;
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 0;
+        }
+
+        /* KPI Tiles */
+        .stat-label {
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #1e293b;
+            margin-top: 2px;
+        }
+
+        /* Search Bar */
+        .search-input {
+            border-radius: 50rem;
+            padding: 0.8rem 1.5rem 0.8rem 3.5rem;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            width: 100%;
+            transition: 0.3s;
+        }
+
+            .search-input:focus {
+                border-color: var(--primary);
+                box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.1);
+                outline: none;
+            }
+
+        .search-icon {
+            position: absolute;
+            left: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        /* Table Design */
+        .table thead th {
+            background: #f8fafc;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 1.2rem 1rem;
+            border: none;
+        }
+
+        .table tbody td {
+            padding: 1.2rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .ledger-row:hover {
+            background-color: #fcfdfe;
+        }
+
+        /* Subtle Badges */
+        .badge-subtle {
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 0.45rem 1rem;
+            border-radius: 50rem;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        /* Pagination Styling */
+        .pagination-container {
+            margin-top: 2.5rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .pagination {
+            gap: 5px;
+            border: none;
+        }
+
+            .pagination li a, .pagination li span {
+                border: 1px solid #e2e8f0 !important;
+                border-radius: 12px !important;
+                padding: 10px 18px !important;
+                color: var(--primary) !important;
+                font-weight: 700 !important;
+                text-decoration: none;
+                transition: 0.2s;
+            }
+
+                .pagination li a:hover {
+                    background: var(--primary);
+                    color: white !important;
+                }
+
+            .pagination li.active span {
+                background-color: var(--primary) !important;
+                color: white !important;
+                border-color: var(--primary) !important;
+            }
+
+        .btn-premium {
+            border-radius: 50rem;
+            padding: 0.75rem 1.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            transition: 0.3s;
+        }
+
+            .btn-premium:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            }
+
+        @@media print {
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-overlay">
+        <div class="container py-2">
+
+            <!-- NAVIGATION -->
+            <nav class="top-nav no-print">
+                <a href="@Url.Action("Index", "Admin")" class="btn btn-light rounded-pill px-4 fw-bold border shadow-sm">
+                    <i class="bi bi-arrow-left me-2 text-primary"></i> HQ COMMAND
+                </a>
+                <h3 class="fw-800 text-dark mb-0">Global <span class="text-primary">Registry</span></h3>
+                <button onclick="window.print()" class="btn btn-dark rounded-pill px-4 fw-bold shadow-sm">
+                    <i class="bi bi-printer me-2"></i> PRINT STATEMENT
+                </button>
+            </nav>
+
+            <!-- KPI SUMMARY -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <div class="glass-card d-flex align-items-center mb-0 border-start border-4 border-success">
+                        <div class="bg-success bg-opacity-10 p-3 rounded-4 me-3 text-success"><i class="bi bi-cash-coin fs-3"></i></div>
+                        <div>
+                            <div class="stat-label">Realized Revenue</div>
+                            <div class="stat-value">R @totalRev.ToString("N2")</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="glass-card d-flex align-items-center mb-0 border-start border-4 border-primary">
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-4 me-3 text-primary"><i class="bi bi-check2-all fs-3"></i></div>
+                        <div>
+                            <div class="stat-label">System Efficiency</div>
+                            <div class="stat-value">@successRate.ToString("N1")% Success</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="glass-card d-flex align-items-center mb-0 border-start border-4 border-info">
+                        <div class="bg-info bg-opacity-10 p-3 rounded-4 me-3 text-info"><i class="bi bi-box-seam fs-3"></i></div>
+                        <div>
+                            <div class="stat-label">Total Volume</div>
+                            <div class="stat-value">@totalVol Units</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABLE CONTENT -->
+            <div class="glass-card">
+                <!-- SEARCH INTERFACE -->
+                @using (Html.BeginForm("Archives", "Admin", FormMethod.Get, new { @class = "row g-3 mb-5 no-print" }))
+                {
+                    <div class="col-md-8 position-relative">
+                        <i class="bi bi-search search-icon"></i>
+                        <input type="text" name="search" class="form-control search-input shadow-sm" placeholder="Filter by tracking #, recipient, city or status..." value="@ViewBag.CurrentSearch">
+                    </div>
+                    <div class="col-md-4 d-grid">
+                        <button type="submit" class="btn btn-primary btn-premium shadow-sm">Apply Filters</button>
+                    </div>
+                }
+
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr class="border-bottom">
+                                <th class="ps-4">DATE</th>
+                                <th>TRACKING REFERENCE</th>
+                                <th>LOGISTICS CONTEXT</th>
+                                <th>STATUS</th>
+                                <th>FEE</th>
+                                <th class="text-end pe-4">COMMAND</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Any())
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center py-5">
+                                        <i class="bi bi-search display-1 text-light mb-3 d-block"></i>
+                                        <p class="text-muted fw-bold">No historical shipments match your criteria.</p>
+                                    </td>
+                                </tr>
+                            }
+                            @foreach (var s in Model)
+                            {
+                                <tr class="ledger-row">
+                                    <td class="ps-4 text-muted fw-bold smaller">@s.CreatedDate.ToString("dd MMM yyyy")</td>
+                                    <td>
+                                        <div class="fw-800 text-primary font-monospace">#@s.TrackingNumber</div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-800 text-dark smaller">@s.ReceiverName</div>
+                                        <div class="smaller text-muted">@s.SenderCity <i class="bi bi-arrow-right mx-1"></i> @s.ReceiverCity</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge-subtle @GetStatusClass(s.Status)">
+                                            @GetStatusIcon(s.Status) @s.Status
+                                        </span>
+                                    </td>
+                                    <td class="fw-800 text-dark font-monospace">R @s.Price.ToString("N2")</td>
+                                    <td class="text-end pe-4">
+                                        <a href="@Url.Action("Details", "Admin", new { id = s.Id })" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-800">
+                                            DOSSIER
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- PAGINATION -->
+                <div class="pagination-container no-print">
+                    @Html.PagedListPager(Model, page => Url.Action("Archives", new { page, search = ViewBag.CurrentSearch }), new PagedListRenderOptions
+                    {
+                        DisplayLinkToFirstPage = PagedListDisplayMode.Always,
+                        DisplayLinkToLastPage = PagedListDisplayMode.Always,
+                        MaximumPageNumbersToDisplay = 5
+                    })
+                </div>
+            </div>
+
+            <footer class="text-center text-muted small mt-5 pb-4 no-print">
+                <i class="bi bi-shield-check me-2"></i> Authorized HQ Archive Access | Record Integrity Verified | © @DateTime.Now.Year MyCourierSA
+            </footer>
+        </div>
+    </div>
+</body>
+</html>
+
+@functions {
+    public string GetStatusClass(string status)
+    {
+        string s = status?.ToLower() ?? "";
+        if (s == AppConstants.ShipmentStatuses.Delivered.ToLower()) return "bg-success-subtle text-success border border-success-subtle";
+        if (s == AppConstants.ShipmentStatuses.Cancelled.ToLower()) return "bg-danger-subtle text-danger border border-danger-subtle";
+        if (s.Contains("transit")) return "bg-primary-subtle text-primary border border-primary-subtle";
+        return "bg-warning-subtle text-warning border border-warning-subtle";
+    }
+
+    public HtmlString GetStatusIcon(string status)
+    {
+        string s = status?.ToLower() ?? "";
+        if (s.Contains("deliver")) return new HtmlString("<i class='bi bi-check-circle-fill me-1'></i>");
+        if (s.Contains("cancel")) return new HtmlString("<i class='bi bi-x-circle-fill me-1'></i>");
+        if (s.Contains("transit")) return new HtmlString("<i class='bi bi-truck me-1'></i>");
+        return new HtmlString("<i class='bi bi-clock-history me-1'></i>");
+    }
+}

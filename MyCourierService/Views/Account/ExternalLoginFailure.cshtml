@@ -1,0 +1,15 @@
+﻿@{
+    ViewBag.Title = "Login Failure";
+}
+
+<main class="container mt-5">
+    <hgroup class="mb-4">
+        <h2>@ViewBag.Title</h2>
+        <h3 class="text-danger">Unsuccessful login with external service.</h3>
+    </hgroup>
+
+    <p>
+        Please try logging in again or use a different method:
+        @Html.ActionLink("Back to Login", "Login", "Account", null, new { @class = "btn btn-outline-dark" })
+    </p>
+</main>

@@ -1,0 +1,62 @@
+﻿@* Views/Shared/_CustomerLayout.cshtml *@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title - MyCourier</title>
+
+    <!-- CSS -->
+    @Styles.Render("~/Content/css")
+
+    @* Optional view-specific styles *@
+    @RenderSection("Styles", required: false)
+</head>
+<body class="bg-light">
+
+    <!-- Top bar with back & logout -->
+    <nav class="navbar navbar-expand navbar-dark bg-primary mb-4">
+        <div class="container">
+            <a href="@Url.Action("Index","Customer")" class="btn btn-light me-2">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+            <span class="navbar-brand">MyCourier Customer</span>
+            <div class="ms-auto">
+                @using (Html.BeginForm("Logout", "Account", FormMethod.Post, new { id = "logoutForm" }))
+                {
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-light">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </button>
+                }
+            </div>
+        </div>
+    </nav>
+
+    <!-- Side quick action buttons -->
+    <div class="d-flex">
+        <div class="flex-shrink-0 p-3 bg-secondary text-white" style="width: 200px; min-height: 85vh;">
+            <h5 class="mb-3">Quick Actions</h5>
+            <a href="@Url.Action("CreateShipment","Customer")" class="btn btn-outline-light w-100 mb-2">
+                <i class="bi bi-plus-circle me-1"></i> New Shipment
+            </a>
+            <a href="@Url.Action("Index","Tracking")" class="btn btn-outline-light w-100 mb-2">
+                <i class="bi bi-search me-1"></i> Track Parcel
+            </a>
+            <a href="@Url.Action("ShipmentHistory","Customer")" class="btn btn-outline-light w-100 mb-2">
+                <i class="bi bi-clock-history me-1"></i> History
+            </a>
+        </div>
+
+        <!-- Main content -->
+        <div class="flex-grow-1 p-4">
+            @RenderBody()
+        </div>
+    </div>
+
+    <!-- JS -->
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/bootstrap")
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

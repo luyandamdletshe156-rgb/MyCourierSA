@@ -1,0 +1,308 @@
+﻿@model IEnumerable<MyCourierSA.Models.UserViewModel>
+@using MyCourierSA.Constants
+@{
+    Layout = null;
+    ViewBag.Title = "Personnel HQ";
+
+    // Dynamic Stats
+    int totalUsers = Model.Count();
+    int driverCount = Model.Count(u => u.Roles.Contains(AppConstants.Roles.Driver));
+    int dispatchCount = Model.Count(u => u.Roles.Contains(AppConstants.Roles.Dispatcher));
+    int customerCount = Model.Count(u => u.Roles.Contains(AppConstants.Roles.Customer));
+    int deactivatedCount = Model.Count(u => !u.IsActive);
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Personnel HQ - MyCourier</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: #f4f7f6;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .main-overlay {
+            background: linear-gradient(135deg, rgba(245, 247, 250, 0.96) 0%, rgba(230, 235, 245, 0.96) 100%);
+            min-height: 100vh;
+            backdrop-filter: blur(12px);
+            padding-bottom: 5rem;
+        }
+
+        .glass-card {
+            background: white;
+            border-radius: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 0;
+            margin-bottom: 1rem;
+        }
+
+        .btn-premium {
+            border-radius: 50rem;
+            padding: 0.6rem 1.5rem;
+            font-weight: 700;
+            transition: 0.3s;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+        }
+
+        .avatar-box {
+            width: 44px;
+            height: 44px;
+            background: #eef2ff;
+            color: #0d6efd;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            border: 1px solid #dee2e6;
+        }
+
+        /* Role Badges */
+        .role-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 50rem;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-driver {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .badge-dispatcher {
+            background: #f3e8ff;
+            color: #7e22ce;
+        }
+
+        .badge-customer {
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .badge-admin {
+            background: #1e293b;
+            color: #fff;
+        }
+
+        /* Status Badges */
+        .status-pill {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.3rem 0.8rem;
+            border-radius: 50rem;
+        }
+
+        .operative-row {
+            transition: 0.2s;
+        }
+
+            .operative-row:hover {
+                background-color: #f8fafc;
+            }
+
+        .deactivated-row {
+            opacity: 0.7;
+            background-color: #fcfcfc;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-overlay">
+        <div class="container py-2">
+
+            <!-- MESSAGES -->
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm border-0 mb-4" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm border-0 mb-4" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <!-- TOP NAVIGATION -->
+            <nav class="top-nav">
+                <a href="@Url.Action("Index")" class="btn btn-light btn-premium border shadow-sm">
+                    <i class="bi bi-arrow-left me-2"></i> COMMAND CENTER
+                </a>
+                <h3 class="fw-bold text-dark mb-0">Personnel <span class="text-primary">Registry</span></h3>
+                <div class="d-flex gap-2">
+                    <a href="@Url.Action("CreateStaff")" class="btn btn-primary btn-premium shadow-sm">
+                        <i class="bi bi-person-plus-fill me-2"></i> ONBOARD STAFF
+                    </a>
+                </div>
+            </nav>
+
+            <!-- STATS AREA -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="glass-card p-3 mb-0 text-center border-bottom border-4 border-primary">
+                        <small class="text-muted fw-bold">TOTAL USERS</small>
+                        <h3 class="fw-800 mb-0">@totalUsers</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card p-3 mb-0 text-center border-bottom border-4 border-info">
+                        <small class="text-muted fw-bold">DRIVERS</small>
+                        <h3 class="fw-800 mb-0">@driverCount</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card p-3 mb-0 text-center border-bottom border-4 border-warning">
+                        <small class="text-muted fw-bold">DEACTIVATED</small>
+                        <h3 class="fw-800 mb-0">@deactivatedCount</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card p-3 mb-0 text-center border-bottom border-4 border-success">
+                        <small class="text-muted fw-bold">CUSTOMERS</small>
+                        <h3 class="fw-800 mb-0">@customerCount</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEARCH BAR -->
+            <div class="glass-card p-3 mb-3">
+                <div class="position-relative">
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                    <input type="text" id="staffSearch" class="form-control border-0 ps-5 rounded-pill bg-light" placeholder="Filter by Name, Email or Role...">
+                </div>
+            </div>
+
+            <!-- STAFF TABLE -->
+            <div class="glass-card p-0 overflow-hidden shadow-sm">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0 table-hover">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4 py-3 text-uppercase small fw-bold text-muted">Member</th>
+                                <th class="py-3 text-uppercase small fw-bold text-muted">Security Details</th>
+                                <th class="py-3 text-uppercase small fw-bold text-muted">Wallet</th>
+                                <th class="py-3 text-uppercase small fw-bold text-muted">Role</th>
+                                <th class="text-end pe-4 py-3 text-uppercase small fw-bold text-muted">Account Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var user in Model)
+                            {
+                                var initial = string.IsNullOrWhiteSpace(user.FullName) ? "?" : user.FullName.Substring(0, 1).ToUpper();
+                                string rowClass = user.IsActive ? "" : "deactivated-row";
+
+                                <tr class="operative-row @rowClass">
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-box me-3 shadow-sm">@initial</div>
+                                            <div>
+                                                <div class="fw-bold text-dark">@user.FullName</div>
+                                                <div class="text-muted smaller">Joined: @user.CreatedAt.ToString("dd MMM yyyy")</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold small">@user.Email</div>
+                                        @if (user.IsActive)
+                                        {
+                                            <div class="text-success smaller"><i class="bi bi-shield-check me-1"></i>Access Granted</div>
+                                        }
+                                        else
+                                        {
+                                            <div class="text-danger smaller"><i class="bi bi-shield-slash me-1"></i>Access Revoked</div>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (user.Roles.Contains(AppConstants.Roles.Customer))
+                                        {
+                                            <span class="fw-bold text-success">R @user.WalletBalance.ToString("N2")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">N/A (Staff)</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @foreach (var role in user.Roles)
+                                        {
+                                            string rClass = role == AppConstants.Roles.Driver ? "badge-driver" :
+                                                            role == AppConstants.Roles.Dispatcher ? "badge-dispatcher" :
+                                                            role == AppConstants.Roles.Admin ? "badge-admin" : "badge-customer";
+                                            <span class="role-badge @rClass me-1">@role</span>
+                                        }
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        @if (user.Roles.Contains(AppConstants.Roles.Admin))
+                                        {
+                                            <span class="badge bg-light text-muted border py-2 px-3 rounded-pill">System Protected</span>
+                                        }
+                                        else
+                                        {
+                                            <div class="d-flex justify-content-end align-items-center gap-3">
+                                                @if (user.IsActive)
+                                                {
+                                                    <span class="status-pill bg-success-subtle text-success border border-success-subtle">ACTIVE</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="status-pill bg-danger-subtle text-danger border border-danger-subtle">DEACTIVATED</span>
+                                                }
+
+                                                @using (Html.BeginForm("ToggleUserStatus", "Admin", new { id = user.Id }, FormMethod.Post))
+                                                {
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-sm @(user.IsActive ? "btn-outline-danger" : "btn-outline-success") rounded-pill px-3 fw-bold"
+                                                            onclick="return confirm('@(user.IsActive ? "Deactivate this account? Access will be immediately revoked." : "Reactivate this account?")')">
+                                                        <i class="bi @(user.IsActive ? "bi-person-x" : "bi-person-check") me-1"></i>
+                                                        @(user.IsActive ? "DEACTIVATE" : "ACTIVATE")
+                                                    </button>
+                                                }
+                                            </div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <p class="text-center text-muted small mt-4">© @DateTime.Now.Year MyCourier HQ - Personnel & Fleet Security</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('staffSearch').addEventListener('keyup', function () {
+            let filter = this.value.toLowerCase();
+            document.querySelectorAll('.operative-row').forEach(row => {
+                row.style.display = row.innerText.toLowerCase().includes(filter) ? '' : 'none';
+            });
+        });
+    </script>
+</body>
+</html>

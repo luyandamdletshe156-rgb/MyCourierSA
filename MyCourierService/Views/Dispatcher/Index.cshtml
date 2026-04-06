@@ -1,0 +1,329 @@
+﻿@model MyCourierSA.Models.DispatcherDashboardViewModel
+@using MyCourierSA.Constants
+@{
+    Layout = null;
+    ViewBag.Title = "Dispatcher Command Center";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewBag.Title - MyCourier</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: linear-gradient(rgba(10, 15, 30, 0.85), rgba(10, 15, 30, 0.95)), url('/Content/Images/courier-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            padding-bottom: 2rem;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(15px);
+            border-radius: 1.25rem;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            color: #2c3e50;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-card {
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            text-align: left;
+            color: #fff;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            border: 3px solid transparent;
+            display: block;
+            text-decoration: none;
+        }
+
+            .stat-card:hover {
+                transform: translateY(-5px);
+                color: #fff;
+                filter: brightness(1.1);
+            }
+
+        /* Highlighting for the active filter */
+        .filter-active {
+            border-color: #fff;
+            box-shadow: 0 0 25px rgba(255,255,255,0.5);
+            transform: scale(1.03);
+            z-index: 10;
+        }
+
+        .stat-icon {
+            position: absolute;
+            right: 10px;
+            bottom: -15px;
+            font-size: 5.5rem;
+            opacity: 0.15;
+        }
+
+        .bg-gradient-warning {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+        }
+
+        .bg-gradient-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .bg-gradient-success {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .table-responsive {
+            border-radius: 0.75rem;
+            border: 1px solid #e9ecef;
+            background: #fff;
+        }
+
+        .table thead th {
+            position: sticky;
+            top: 0;
+            background-color: #f8f9fa;
+            z-index: 1;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            padding: 1rem;
+        }
+
+        .badge-custom {
+            font-size: 0.7rem;
+            padding: 0.5em 0.8em;
+            border-radius: 30px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .btn-command {
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.75rem;
+            transition: 0.3s;
+        }
+
+            .btn-command:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            }
+    </style>
+</head>
+<body>
+
+    <div class="container-fluid py-4 px-lg-5">
+
+        <!-- HEADER SECTION -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary border-opacity-50">
+            <div class="mb-3 mb-lg-0">
+                <h2 class="mb-0 fw-bold text-white"><i class="bi bi-radar text-info me-2"></i> Dispatch HQ</h2>
+                <small class="text-light opacity-75">Operational Command Center</small>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <a href="@Url.Action("TrackShipment", "Dispatcher")" class="btn btn-info text-dark btn-command rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-search me-1"></i> Track
+                </a>
+                <a href="@Url.Action("ManageShipments", "Dispatcher")" class="btn btn-secondary text-white btn-command rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-server me-1"></i> Registry
+                </a>
+                <a href="@Url.Action("RoutePlanner", "Dispatcher")" class="btn btn-warning text-dark btn-command rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-map-fill me-1"></i> Planner
+                </a>
+                <a href="@Url.Action("CreateShipment", "Dispatcher")" class="btn btn-primary btn-command rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-plus-lg me-1"></i> New Booking
+                </a>
+
+                @using (Html.BeginForm("LogOff", "Account", FormMethod.Post, new { id = "logoutForm", @class = "d-inline" }))
+                {
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger btn-command rounded-pill px-3 shadow-sm"><i class="bi bi-power"></i></button>
+                }
+            </div>
+        </div>
+
+        <!-- STATS CARDS (INTERACTIVE FILTERS) -->
+        <div class="row g-3 mb-4">
+            <!-- 1. PENDING -->
+            <div class="col-md-3">
+                <a href="@Url.Action("Index", new { status = AppConstants.ShipmentStatuses.Pending })"
+                   class="stat-card bg-gradient-warning text-dark @(Model.CurrentFilter == AppConstants.ShipmentStatuses.Pending ? "filter-active" : "")">
+                    <h6 class="fw-bold mb-1 text-uppercase small">Approval Queue</h6>
+                    <h2 class="display-6 fw-bolder mb-0">@Model.PendingCount</h2>
+                    <i class="bi bi-hourglass-split stat-icon"></i>
+                </a>
+            </div>
+
+            <!-- 2. READY TO ASSIGN (Filters for 'Approved') -->
+            <div class="col-md-3">
+                <a href="@Url.Action("Index", new { status = AppConstants.ShipmentStatuses.Approved })"
+                   class="stat-card bg-gradient-info text-dark @(Model.CurrentFilter == AppConstants.ShipmentStatuses.Approved ? "filter-active" : "")">
+                    <h6 class="fw-bold mb-1 text-uppercase small">Ready to Assign</h6>
+                    <h2 class="display-6 fw-bolder mb-0">@Model.ApprovedCount</h2>
+                    <i class="bi bi-person-plus-fill stat-icon"></i>
+                </a>
+            </div>
+
+            <!-- 3. WAREHOUSE INVENTORY -->
+            <div class="col-md-3">
+                <a href="@Url.Action("Index", new { status = AppConstants.ShipmentStatuses.AtWarehouse })"
+                   class="stat-card bg-gradient-success text-dark @(Model.CurrentFilter == AppConstants.ShipmentStatuses.AtWarehouse ? "filter-active" : "")">
+                    <h6 class="fw-bold mb-1 text-uppercase small">Warehouse Inventory</h6>
+                    <h2 class="display-6 fw-bolder mb-0">@Model.WarehouseCount</h2>
+                    <i class="bi bi-building stat-icon"></i>
+                </a>
+            </div>
+
+            <!-- 4. ACTIVE LOGISTICS (Sum of Fleet movement) -->
+            <div class="col-md-3">
+                <a href="@Url.Action("Index", new { status = "Active" })"
+                   class="stat-card bg-gradient-primary @(Model.CurrentFilter == "Active" ? "filter-active" : "")">
+                    <h6 class="fw-bold mb-1 text-uppercase small">Active Logistics</h6>
+                    <h2 class="display-6 fw-bolder mb-0">@Model.AssignedCount</h2>
+                    <i class="bi bi-truck stat-icon"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- MAIN TABLE -->
+        <div class="glass-panel">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0 fw-bold text-dark"><i class="bi bi-card-list text-primary me-2"></i> Operational Monitor</h4>
+                <div class="badge bg-light text-dark border p-2 px-3 rounded-pill fw-bold">
+                    Filter: @(string.IsNullOrEmpty(Model.CurrentFilter) ? "All Active" : Model.CurrentFilter)
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Tracking #</th>
+                            <th>Route & Receiver</th>
+                            <th>Status</th>
+                            <th>Assigned Driver</th>
+                            <th class="text-end">Command</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.AllShipments.Any())
+                        {
+                            <tr><td colspan="5" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-2 mb-2 d-block"></i> No shipments found for this category.</td></tr>
+                        }
+                        @foreach (var s in Model.AllShipments)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="fw-bolder text-primary font-monospace">@s.TrackingNumber</div>
+                                    <small class="text-muted fw-bold text-uppercase" style="font-size:0.65rem">@s.ParcelType</small>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark">@(s.SenderCity ?? "N/A") <i class="bi bi-arrow-right text-muted mx-1"></i> @(s.ReceiverCity ?? "N/A")</div>
+                                    <small class="text-muted"><i class="bi bi-person me-1"></i> @s.ReceiverName</small>
+                                </td>
+                                <td>
+                                    <span class="badge badge-custom @GetBadgeClass(s.Status) shadow-sm">@s.Status</span>
+                                </td>
+                                <td>
+                                    @if (s.AssignedDriver != null)
+                                    {
+                                        <div class="badge bg-primary bg-opacity-10 text-primary border border-primary fw-bold p-2 px-3 rounded-pill">
+                                            <i class="bi bi-person-badge me-1"></i> @s.AssignedDriver.UserName
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted fst-italic small">Waiting Assignment</span>
+                                    }
+                                </td>
+
+                                <!-- ===================================== -->
+                                <!-- UPDATED COMMAND BUTTON LOGIC -->
+                                <!-- ===================================== -->
+                                <td class="text-end">
+                                    <div class="d-flex justify-content-end gap-1">
+
+                                        @* 1. APPROVAL FLOW (New Booking) *@
+                                        @if (s.Status == AppConstants.ShipmentStatuses.Pending)
+                                        {
+                                            using (Html.BeginForm("ApprovePickup", "Dispatcher", new { id = s.Id }, FormMethod.Post, new { @class = "m-0" }))
+                                            {
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-success fw-bold px-3 shadow-sm rounded-pill">Approve</button>
+                                            }
+                                        }
+
+                                        @* 2. ASSIGN PICKUP FLOW (Ready for Driver to collect from sender) *@
+                                        @if (s.Status == AppConstants.ShipmentStatuses.Approved)
+                                        {
+                                            <a href="@Url.Action("AssignDriver", "Dispatcher", new { id = s.Id })" class="btn btn-sm btn-info text-dark fw-bold px-3 shadow-sm rounded-pill">
+                                                Assign Pickup
+                                            </a>
+                                        }
+
+                                        @* 3. INDUCTION FLOW (Driver dropped it off, waiting for warehouse staff to process) *@
+                                        @if (s.Status == AppConstants.ShipmentStatuses.AtWarehouse && string.IsNullOrEmpty(s.SortingBin))
+                                        {
+                                            <a href="@Url.Action("ProcessAtWarehouse", "Dispatcher", new { id = s.Id })" class="btn btn-sm btn-warning text-dark fw-bold px-3 shadow-sm rounded-pill">
+                                                Induct Parcel
+                                            </a>
+                                        }
+
+                                        @* 4. DECISION & DISPATCH FLOW (Inducted! Now you decide to assign for delivery or hold it) *@
+                                        @if (s.Status == AppConstants.ShipmentStatuses.AtWarehouse && !string.IsNullOrEmpty(s.SortingBin))
+                                        {
+                                            <a href="@Url.Action("AssignDriver", "Dispatcher", new { id = s.Id })" class="btn btn-sm btn-primary text-white fw-bold px-3 shadow-sm rounded-pill">
+                                                Assign Delivery
+                                            </a>
+                                            <a href="@Url.Action("PrintLabel", "Dispatcher", new { id = s.Id })" target="_blank" class="btn btn-sm btn-dark rounded-circle shadow-sm">
+                                                <i class="bi bi-printer"></i>
+                                            </a>
+                                        }
+
+                                        @* VIEW DETAILS (Always visible) *@
+                                        <a href="@Url.Action("Details", "Dispatcher", new { id = s.Id })" class="btn btn-sm btn-outline-secondary rounded-pill px-3 shadow-sm">View</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @functions {
+        public string GetBadgeClass(string status)
+        {
+            if (status == AppConstants.ShipmentStatuses.Pending) return "bg-warning text-dark";
+            if (status == AppConstants.ShipmentStatuses.Approved) return "bg-info text-dark";
+            if (status == AppConstants.ShipmentStatuses.AtWarehouse) return "bg-success text-white";
+            if (status.Contains("Assigned") || status.Contains("Transit") || status.Contains("Collected")) return "bg-primary text-white";
+            if (status == AppConstants.ShipmentStatuses.Delivered) return "bg-dark text-white";
+            if (status == AppConstants.ShipmentStatuses.Cancelled) return "bg-danger text-white";
+            return "bg-light text-dark border";
+        }
+    }
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

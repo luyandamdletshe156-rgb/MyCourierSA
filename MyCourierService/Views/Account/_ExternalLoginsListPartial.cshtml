@@ -1,0 +1,76 @@
+﻿@model MyCourierSA.Models.ExternalLoginListViewModel
+@using Microsoft.Owin.Security
+@{
+    ViewBag.Title = "Log in with External Service";
+}
+
+<main class="account-page">
+    <div class="account-container d-flex justify-content-center align-items-center vh-100">
+        <div class="account-card p-5 shadow-lg rounded text-center">
+            <h2 class="mb-4">Log In Using Another Service</h2>
+            <p class="mb-4">Choose one of the available services to log in quickly.</p>
+
+            @{
+                var loginProviders = Context.GetOwinContext().Authentication.GetExternalAuthenticationTypes();
+                if (!loginProviders.Any())
+                {
+                    <div class="alert alert-warning">No external authentication providers are configured.</div>
+                }
+                else
+                {
+                    using (Html.BeginForm("ExternalLogin", "Account", new { ReturnUrl = Model.ReturnUrl }, FormMethod.Post, new { role = "form" }))
+                    {
+                        @Html.AntiForgeryToken()
+                        <div class="d-flex flex-column gap-3">
+                            @foreach (AuthenticationDescription p in loginProviders)
+                            {
+                                <button type="submit" class="btn btn-outline-primary btn-lg" name="provider" value="@p.AuthenticationType">
+                                    <i class="bi bi-box-arrow-in-right me-2"></i> Log in with @p.Caption
+                                </button>
+                            }
+                        </div>
+                    }
+                }
+            }
+            <p class="mt-4">
+                @Html.ActionLink("Back to Login", "Login", "Account", null, new { @class = "btn btn-secondary btn-sm" })
+            </p>
+        </div>
+    </div>
+</main>
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        .account-page {
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            min-height: 100vh;
+        }
+
+        .account-container {
+            padding: 1rem;
+        }
+
+        .account-card {
+            background: #ffffffcc;
+            border-radius: 15px;
+            max-width: 450px;
+            width: 100%;
+        }
+
+        .btn-outline-primary {
+            border-radius: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-align: left;
+        }
+
+            .btn-outline-primary:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            }
+
+        .btn-secondary {
+            border-radius: 10px;
+        }
+    </style>
+}
