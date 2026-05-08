@@ -24,14 +24,14 @@ jobs:
       - name: Restore NuGet packages
         run: nuget restore
 
-      - name: Build and Package
-        run: msbuild MyCourierService\MyCourierService.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:PackageLocation="${{ github.workspace }}\output\app.zip"
+      - name: Build and Publish to Folder
+        run: msbuild MyCourierService\MyCourierService.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:WebPublishMethod=FileSystem /p:publishUrl="${{ github.workspace }}\output"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ${{ github.workspace }}\output\app.zip
+          path: ${{ github.workspace }}\output
 
   deploy:
     runs-on: windows-latest
@@ -45,6 +45,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: .net-app
+          path: ${{ github.workspace }}\output
       
       - name: Login to Azure
         uses: azure/login@v2
@@ -59,5 +60,4 @@ jobs:
         with:
           app-name: 'CourierApp'
           slot-name: 'Production'
-          package: app.zip
-          
+          package: ${{ github.workspace }}\output
